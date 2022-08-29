@@ -1,1 +1,1 @@
-# acou-input-single
+# AcouInput: Acoustic-Based Handwriting Input for Mobile Devices
