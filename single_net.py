@@ -8,7 +8,6 @@
 """
 from torch import nn
 import torch
-
 from blocks.se_block import SEBlock
 from blocks.ca_block import CABlock
 from blocks.tcn import TemporalConvNet
