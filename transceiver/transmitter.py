@@ -23,7 +23,7 @@ class Transmitter(object):
     @classmethod
     def get_passband_sequence(cls, signal_type=SignalType.Barker):
         root_path = "../"
-        if os.getcwd().endswith("acou-input-torch"):
+        if os.getcwd().endswith("acou-input-single"):
             root_path = ""
         if signal_type == SignalType.GSM:
             return pickle.load(open(root_path+'data/gsm_passband.pkl', 'rb'))
@@ -35,7 +35,7 @@ class Transmitter(object):
     @classmethod
     def get_baseband_sequence(cls, signal_type=SignalType.Barker):
         root_path = "../"
-        if os.getcwd().endswith("acou-input-torch"):
+        if os.getcwd().endswith("acou-input-single"):
             root_path = ""
         if signal_type == SignalType.GSM:
             return pickle.load(open(root_path + 'data/gsm_baseband.pkl', 'rb'))

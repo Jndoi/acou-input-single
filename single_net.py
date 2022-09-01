@@ -22,7 +22,7 @@ import datetime
 
 
 BATCH_SIZE = 8
-EPOCH = 10
+EPOCH = 30
 LR = 1e-3
 
 
@@ -49,8 +49,8 @@ class Net(nn.Module):
         self.num_classes = num_classes
         self.conv = nn.Sequential(
             nn.Sequential(
-                Conv2dWithBN(1, in_channels, kernel_size=(5, 5), stride=(2, 2), padding=(1, 1)),
-                # nn.Dropout(0.1)
+                Conv2dWithBN(1, in_channels, kernel_size=(5, 5), stride=(2, 2), padding=(2, 2)),
+                nn.Dropout(0.1)
             ),
             self.make_conv_layers(layers),
             nn.AdaptiveAvgPool2d(1),
@@ -128,7 +128,9 @@ def train():
     args = ["RES_32", "M", "RES_32",  "M", "RES_64", "M", "RES_64"]
     net = Net(layers=args, in_channels=32, gru_input_size=64, gru_hidden_size=64, num_classes=26).cuda()
     print_model_parm_nums(net)
-    data_path = [r"../data/dataset_single_smooth.pkl", ]
+    data_path = [r"data/dataset_single_smooth.pkl",
+                 r"data/dataset_single_smooth_10cm.pkl",
+                 r"data/dataset_single_smooth_20cm.pkl", ]
     save = True
     loss_func = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(net.parameters(), lr=LR, weight_decay=0.002)
@@ -174,9 +176,9 @@ def train():
 
 
 def predict(base_path, filename):
-    args = ["RES_16", "M", "RES_32",  "M", "RES_64", "M", "RES_64"]
-    net = Net(layers=args, in_channels=16, gru_input_size=64, gru_hidden_size=64, num_classes=26).cuda()
-    state_dict = torch.load('single_net_params_data_augmentation.pth')  # 2028 569
+    args = ["RES_32", "M", "RES_32",  "M", "RES_64", "M", "RES_64"]
+    net = Net(layers=args, in_channels=32, gru_input_size=64, gru_hidden_size=64, num_classes=26).cuda()
+    state_dict = torch.load('model/single_net_params_data_augmentation.pth')  # 2028 569
     # state_dict = torch.load('single_net_params.pth')  # 2028 569
     net.load_state_dict(state_dict)
     # base_path, filename, gen_img = False, img_save_path = None, gen_phase = False,
@@ -211,4 +213,4 @@ if __name__ == '__main__':
     # import os
     # files = os.listdir(r"D:\AcouInputDataSet\single_test")
     # predict(r"D:\AcouInputDataSet\single_test", files)
-    # # 0.7076923076923077
+    # 0.777
