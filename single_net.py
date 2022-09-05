@@ -13,7 +13,7 @@ from blocks.ca_block import CABlock
 from blocks.tcn import TemporalConvNet
 from transceiver.receiver import Receiver
 from utils.dataset_utils import get_data_loader
-from constants.constants import DatasetLoadType, WINDOW_SIZE, TAP_SIZE, START_INDEX_SHIFT
+from constants.constants import DatasetLoadType, WINDOW_SIZE, TAP_SIZE, START_INDEX_SHIFT, LabelVocabulary
 from utils.common_utils import decode_predictions, decode_labels
 from utils.wav2pickle_utils import DataItem
 from utils.plot_utils import show_d_cir
@@ -59,7 +59,7 @@ class Net(nn.Module):
         self.gru = nn.GRU(self.gru_input_size, self.gru_hidden_size, num_layers=1)
         self.cls = nn.Sequential(
             nn.Linear(self.gru_hidden_size, self.num_classes),
-            nn.LogSoftmax(dim=-1)
+            nn.LogSoftmax(dim=-1)  # 可以去掉
         )
 
     def forward(self, x):  # shape of x: (batch_size, sequence_length, features)
@@ -70,11 +70,11 @@ class Net(nn.Module):
             conv_items.append(conv_item)  # shape of conv_item: (1, batch_size, features)
         x = torch.cat(conv_items, 0)  # shape of x: (sequence_length, batch_size, features)
         # -------GRU---------
-        x, _ = self.gru(x)  # shape of x: (sequence_length, batch_size, gru_hidden_size)
-        x = x[-1, :, :]  # get the last hidden output (batch_size, gru_hidden_size)
+        _, h_n = self.gru(x)  # shape of x: (sequence_length, batch_size, gru_hidden_size)
+        # x = x[-1, :, :]  # get the last hidden output (batch_size, gru_hidden_size)
         # -------------------
-        x = self.cls(x)  # shape of x: (batch_size, num_classes)
-        return x
+        output = self.cls(h_n.squeeze(0))  # shape of x: (batch_size, num_classes)
+        return output
 
     def make_conv_layers(self, arch):
         layers = []
@@ -128,9 +128,7 @@ def train():
     args = ["RES_32", "M", "RES_32",  "M", "RES_64", "M", "RES_64"]
     net = Net(layers=args, in_channels=32, gru_input_size=64, gru_hidden_size=64, num_classes=26).cuda()
     print_model_parm_nums(net)
-    data_path = [r"data/dataset_single_smooth.pkl",
-                 r"data/dataset_single_smooth_10cm.pkl",
-                 r"data/dataset_single_smooth_20cm.pkl", ]
+    data_path = [r"data/dataset_single_smooth_40_20.pkl",]
     save = True
     loss_func = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(net.parameters(), lr=LR, weight_decay=0.002)
@@ -203,6 +201,7 @@ def predict(base_path, filename):
             # print("{} {}".format(file, predicted.data))
         sum = 0
         for i in range(26):
+            print("{} {}".format(LabelVocabulary[i], arr[i * 5:(i + 1) * 5]))
             sum += arr[i * 5:(i + 1) * 5].count(i)
         print(arr)
         print("{} {}".format(sum, sum/130))
