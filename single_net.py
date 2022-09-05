@@ -128,7 +128,7 @@ def train():
     args = ["RES_32", "M", "RES_32",  "M", "RES_64", "M", "RES_64"]
     net = Net(layers=args, in_channels=32, gru_input_size=64, gru_hidden_size=64, num_classes=26).cuda()
     print_model_parm_nums(net)
-    data_path = [r"data/dataset_single_smooth_40_20.pkl",]
+    data_path = [r"data/dataset_single_smooth_40_10.pkl",]
     save = True
     loss_func = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(net.parameters(), lr=LR, weight_decay=0.002)

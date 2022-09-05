@@ -74,7 +74,7 @@ FRAME_LENGTH = 480
 # CIR
 TAP_SIZE = 60
 WINDOW_SIZE = 40  # 0.6s
-STEP = 20  # overlap = 50%
+STEP = 10  # overlap = 50%
 P_VALUE = 192
 L_VALUE = 120
 Amplitude = np.iinfo(np.int16).max
