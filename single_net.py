@@ -70,9 +70,11 @@ class Net(nn.Module):
             conv_items.append(conv_item)  # shape of conv_item: (1, batch_size, features)
         x = torch.cat(conv_items, 0)  # shape of x: (sequence_length, batch_size, features)
         # -------GRU---------
+
         _, h_n = self.gru(x)  # shape of x: (sequence_length, batch_size, gru_hidden_size)
         # x = x[-1, :, :]  # get the last hidden output (batch_size, gru_hidden_size)
         # -------------------
+
         output = self.cls(h_n.squeeze(0))  # shape of x: (batch_size, num_classes)
         return output
 
@@ -131,6 +133,8 @@ def train():
     data_path = [r"data/dataset_single_smooth_20_40.pkl",
                  r"data/dataset_single_smooth_20_40_10cm.pkl",
                  r"data/dataset_single_smooth_20_40_20cm.pkl",
+                 r"data/dataset_single_smooth_20_40_five_fourth.pkl",
+                 r"data/dataset_single_smooth_20_40_four_fifth.pkl",
                  ]
     save = True
     loss_func = nn.CrossEntropyLoss()
@@ -182,14 +186,16 @@ def predict(base_path, filename):
     state_dict = torch.load('model/single_net_params_data_augmentation.pth')  # 2028 569
     # state_dict = torch.load('single_net_params.pth')  # 2028 569
     net.load_state_dict(state_dict)
-    # base_path, filename, gen_img = False, img_save_path = None, gen_phase = False,
-    # start_index_shift = START_INDEX_SHIFT
     if net is None or base_path is None or filename is None:
         raise Exception("please provide parameters")
     net.eval()  # 禁用 dropout, 避免 BatchNormalization 重新计算均值和方差
     arr = []
+    char_dict = {}
     with torch.no_grad():
         for file in filename:
+            label = file.split("_")[0]
+            if label not in char_dict:
+                char_dict[label] = []
             split_d_cir = Receiver.receive(base_path, file, gen_img=False,
                                            start_index_shift=START_INDEX_SHIFT,
                                            augmentation_radio=None)
@@ -197,22 +203,25 @@ def predict(base_path, filename):
             # show_d_cir(split_d_cir, is_frames=True)
             split_d_cir = torch.tensor(split_d_cir).float() / 255
             split_d_cir = split_d_cir.unsqueeze(0)  # add batch_size dim: torch.Size([1, 4, 1, 60, 60])
-
             output = net(split_d_cir.cuda())
             predicted = torch.argmax(output, 1)
             arr.append(predicted.cpu().numpy()[0])
+            char_dict[label].append(chr(predicted.cpu().numpy()[0]+ord('a')))
             # print("{} {}".format(file, predicted.data))
-        sum = 0
-        for i in range(26):
-            print("{} {}".format(LabelVocabulary[i], arr[i * 5:(i + 1) * 5]))
-            sum += arr[i * 5:(i + 1) * 5].count(i)
-        print(arr)
-        print("{} {}".format(sum, sum/130))
+        total = 0
+        correct = 0
+        for key, value in char_dict.items():
+            item_total = len(value)
+            item_correct = value.count(key)
+            print("{} {} {}".format(key, value, item_correct/item_total))
+            total += item_total
+            correct += item_correct
+        print("acc:{}".format(correct/total))
 
 
 if __name__ == '__main__':
-    train()
-    # import os
-    # files = os.listdir(r"D:\AcouInputDataSet\single_test")
-    # predict(r"D:\AcouInputDataSet\single_test", files)
+    # train()
+    import os
+    files = os.listdir(r"D:\AcouInputDataSet\single_test")
+    predict(r"D:\AcouInputDataSet\single_test", files)
     # 0.777
