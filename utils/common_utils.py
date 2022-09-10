@@ -7,23 +7,31 @@
 
 """
 import numpy as np
+from scipy.signal import savgol_filter
+
 from utils.plot_utils import show_d_cir, show_signals
 from constants.constants import TAP_SIZE, LABEL_CLASSES, DataType, SignalPaddingTypeMap, SignalPaddingType, WINDOW_SIZE
 import torch
 
 
-def is_static(data_std, threshold):  # 每次传入30
-    # nums = data_abs.shape[1] // 30
-    # data_abs_append = np.c_[data_abs, np.zeros((120, (nums+1) * 30 - data_abs.shape[1]))]
+def smooth_data(data, win_length=11, poly_order=2):
+    data = savgol_filter(data, window_length=win_length, polyorder=poly_order, mode="nearest")
+    return data
+
+
+def is_static(one_step_data, threshold):  # 每次传入(20, 120)的数据
+    one_step_data_std = smooth_data(np.std(one_step_data, axis=0))
+    one_step_data_energy = smooth_data(np.sum(one_step_data, axis=0))
+    show_signals(one_step_data_std)
+    show_signals(one_step_data_energy)
     # data_abs_append_std = cls.smooth_data(data_abs_append.std(axis=0))
     # data_abs_append_std_sum = data_abs_append_std
     # data_abs_append_std_sum = np.sum(data_abs_append_std.reshape((5, -1), order='F'), axis=0)
-    data_std = np.sum(data_std.reshape((5, -1), order='F'), axis=0)
-    # 一共包含6个分段
-    if sum(data_std <= threshold) >= 4:
-        return False
-    else:
-        return True
+    # data_std = np.sum(data_std.reshape((5, -1), order='F'), axis=0)
+    # if sum(data_std <= threshold) > 2:
+    #     return False
+    # else:
+    #     return True
 
 
 def padding_signals(data, data_type, target_frames_num):

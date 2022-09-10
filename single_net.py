@@ -14,7 +14,6 @@ from blocks.tcn import TemporalConvNet
 from transceiver.receiver import Receiver
 from utils.dataset_utils import get_data_loader
 from constants.constants import DatasetLoadType, WINDOW_SIZE, TAP_SIZE, START_INDEX_SHIFT, LabelVocabulary
-from utils.common_utils import decode_predictions, decode_labels
 from utils.wav2pickle_utils import DataItem
 from utils.plot_utils import show_d_cir
 from blocks.res_block import ResBasicBlock
@@ -50,7 +49,7 @@ class Net(nn.Module):
         self.conv = nn.Sequential(
             nn.Sequential(
                 Conv2dWithBN(1, in_channels, kernel_size=(5, 5), stride=(2, 2), padding=(2, 2)),
-                nn.Dropout(0.1)
+                nn.Dropout(0.2)
             ),
             self.make_conv_layers(layers),
             nn.AdaptiveAvgPool2d(1),
@@ -59,22 +58,18 @@ class Net(nn.Module):
         self.gru = nn.GRU(self.gru_input_size, self.gru_hidden_size, num_layers=1)
         self.cls = nn.Sequential(
             nn.Linear(self.gru_hidden_size, self.num_classes),
-            nn.LogSoftmax(dim=-1)  # 可以去掉
+            nn.LogSoftmax(dim=-1)
         )
 
-    def forward(self, x):  # shape of x: (batch_size, sequence_length, features)
-        x = x.transpose(0, 1)  # (sequence_length, batch_size, 1, H, W)
+    def forward(self, x):   # shape of x: (batch_size, sequence_length, features)
+        x = x.transpose(0, 1)   # (sequence_length, batch_size, 1, H, W)
         conv_items = []
         for x_item in x:
-            conv_item = self.conv(x_item).unsqueeze(0)  # add a dim
-            conv_items.append(conv_item)  # shape of conv_item: (1, batch_size, features)
-        x = torch.cat(conv_items, 0)  # shape of x: (sequence_length, batch_size, features)
-        # -------GRU---------
-
-        _, h_n = self.gru(x)  # shape of x: (sequence_length, batch_size, gru_hidden_size)
-        # x = x[-1, :, :]  # get the last hidden output (batch_size, gru_hidden_size)
-        # -------------------
-
+            conv_item = self.conv(x_item).unsqueeze(0)
+            conv_items.append(conv_item)    # shape of conv_item: (1, batch_size, features)
+        x = torch.cat(conv_items, 0)    # shape of x: (sequence_length, batch_size, features)
+        _, h_n = self.gru(x)    # shape of x: (sequence_length, batch_size, gru_hidden_size)
+        # shape of h_n: (1, batch_size, gru_hidden_size)
         output = self.cls(h_n.squeeze(0))  # shape of x: (batch_size, num_classes)
         return output
 
@@ -85,7 +80,7 @@ class Net(nn.Module):
             if type(arg) == int:
                 layers += [Conv2dWithBN(in_channels=in_channels, out_channels=arg,
                                         kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
-                           nn.Dropout(0.1)]
+                           nn.Dropout(0.2)]
                 in_channels = arg
             elif arg == "M":
                 layers += [nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2))]
@@ -127,15 +122,11 @@ def train():
     # 0.838462
     # [16, "M", 32,  "M", 48, "M", 64]
     # Conv2dWithBN(1, in_channels, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
-    args = ["RES_32", "M", "RES_32",  "M", "RES_64", "M", "RES_64"]
+    # args = ["RES_32", "M", "RES_32",  "M", "RES_64", "M", "RES_64"]
+    args = [32, "M", 32,  "M", 64, "M", 64]
     net = Net(layers=args, in_channels=32, gru_input_size=64, gru_hidden_size=64, num_classes=26).cuda()
     print_model_parm_nums(net)
-    data_path = [r"data/dataset_single_smooth_20_40.pkl",
-                 r"data/dataset_single_smooth_20_40_10cm.pkl",
-                 r"data/dataset_single_smooth_20_40_20cm.pkl",
-                 r"data/dataset_single_smooth_20_40_five_fourth.pkl",
-                 r"data/dataset_single_smooth_20_40_four_fifth.pkl",
-                 ]
+    data_path = [r"data/dataset_single_smooth_20_40.pkl", ]
     save = True
     loss_func = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(net.parameters(), lr=LR, weight_decay=0.002)
@@ -177,7 +168,7 @@ def train():
             evaluate(valid_loader, net, "valid", valid_size)
             evaluate(test_loader, net, "test", test_size)
     if save:
-        torch.save(net.state_dict(), 'single_net_params_data_augmentation.pth')
+        torch.save(net.state_dict(), 'model/single_net_params_data_augmentation.pth')
 
 
 def predict(base_path, filename):
@@ -219,9 +210,12 @@ def predict(base_path, filename):
         print("acc:{}".format(correct/total))
 
 
+# train loss: 68.18 train acc: 0.9847
+# valid: 1813/1950, acc 0.929744
+# test: 1812/1950, acc 0.929231
 if __name__ == '__main__':
-    # train()
-    import os
-    files = os.listdir(r"D:\AcouInputDataSet\single_test")
-    predict(r"D:\AcouInputDataSet\single_test", files)
+    train()
+    # import os
+    # files = os.listdir(r"D:\AcouInputDataSet\single_test")
+    # predict(r"D:\AcouInputDataSet\single_test", files)
     # 0.777

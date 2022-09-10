@@ -16,12 +16,14 @@ import numpy as np
 from utils.audio_utils import AudioUtils
 from transceiver.transmitter import Transmitter
 from constants.constants import *
+from utils.common_utils import is_static
 from utils.plot_utils import show_signals, show_d_cir, show_fft, show_phase
 import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter
 import os
 from tqdm import tqdm
 from utils.data_augmentation_utils import augmentation_speed
+import cv2
 
 
 class Receiver(object):
@@ -213,7 +215,13 @@ class Receiver(object):
         :param poly_order: the order of the polynomial used to fit the samples.
         :return: the filtered data
         """
-        return savgol_filter(data, window_length=win_length, polyorder=poly_order, mode="nearest")
+        # print(data.shape)
+        # print(data.T.shape)
+        # show_signals(data)
+        # data = cv2.GaussianBlur(src=data, ksize=(5, 5), sigmaX=0, sigmaY=0.5)
+        data = savgol_filter(data, window_length=win_length, polyorder=poly_order, mode="nearest")
+        # show_signals(data)
+        return data
 
     @classmethod
     def smooth_d_cir(cls, data):
@@ -364,6 +372,8 @@ class Receiver(object):
         data = cls.cal_d_cir(cls.demodulation(data), cls.gen_training_matrix())
         data = cls.smooth_data(np.real(data)) + 1j * cls.smooth_data(np.imag(data))
         data_abs = np.abs(data)
+        is_static(data_abs, 0)
+        show_d_cir(data_abs)
         if augmentation_radio:
             data_abs = augmentation_speed(data_abs, speed_radio=augmentation_radio)
         abs_d_cir = cls.split_abs_d_cir(data_abs)
@@ -383,13 +393,17 @@ def gen_cir(base_path, label_arr):
 
 
 if __name__ == '__main__':
+    pass
     # 如果连续三个10区间和都小于某个值则表示需要切分
     # 要求间距最小为30，即10
-    split_abs_d_cir = \
-        Receiver.receive(base_path=r'D:\Program\Tencent\QQ-Chat-Record\563496927\FileRecv\MobileFile',
-                             filename='abcd_1661655728406.wav',  start_index_shift=START_INDEX_SHIFT)
     # print(abs_d_cir.shape)
     # show_d_cir(abs_d_cir, True)
     # show_signals(cls.smooth_data(np.std(data_abs, axis=0)))
-    # Receiver.receive(base_path=r'D:\AcouInputDataSet\single',
-    #                  filename='a_1656738489750.wav',  gen_img=False, start_index_shift=5)
+    # a_1656738551359.wav
+    abs_d_cir = Receiver.receive(base_path=r'D:\Program\Tencent\QQ-Chat-Record\563496927\FileRecv\MobileFile',
+                                 filename='abcde_1662797957828.wav',
+                                 gen_img=False, start_index_shift=5)
+    # show_d_cir(abs_d_cir, is_frames=True)
+    # print(abs_d_cir.shape)
+    # for c in abs_d_cir:
+    #     show_d_cir(c.squeeze(), False)

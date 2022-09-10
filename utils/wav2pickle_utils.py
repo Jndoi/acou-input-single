@@ -54,15 +54,15 @@ def load_data_from_pickle(base_path=None):
 
 if __name__ == '__main__':
     # pass
+    # wav2pickle(wav_base_path=r"D:\AcouInputDataSet\single",
+    #            dump_path=r'../data/dataset_single_smooth_20_40.pkl', start_index_shift=START_INDEX_SHIFT)
+    # wav2pickle(wav_base_path=r"D:\AcouInputDataSet\single",
+    #            dump_path=r'../data/dataset_single_smooth_20_40_20cm.pkl', start_index_shift=START_INDEX_SHIFT + 28)
+    # wav2pickle(wav_base_path=r"D:\AcouInputDataSet\single",
+    #            dump_path=r'../data/dataset_single_smooth_20_40_10cm.pkl', start_index_shift=START_INDEX_SHIFT + 14)
     wav2pickle(wav_base_path=r"D:\AcouInputDataSet\single",
-               dump_path=r'../data/dataset_single_smooth.pkl', start_index_shift=START_INDEX_SHIFT)
-    # wav2pickle(wav_base_path=r"D:\AcouInputDataSet\single",
-    #            dump_path=r'../data/dataset_single_smooth_20cm.pkl', start_index_shift=START_INDEX_SHIFT + 28)
-    # wav2pickle(wav_base_path=r"D:\AcouInputDataSet\single",
-    #            dump_path=r'../data/dataset_single_smooth_10cm.pkl', start_index_shift=START_INDEX_SHIFT + 14)
-    # wav2pickle(wav_base_path=r"D:\AcouInputDataSet\single",
-    #            dump_path=r'../data/dataset_single_smooth_four_fifth.pkl', start_index_shift=START_INDEX_SHIFT,
-    #            augmentation_radio=0.8)
-    # wav2pickle(wav_base_path=r"D:\AcouInputDataSet\single",
-    #            dump_path=r'../data/dataset_single_smooth_five_fourth.pkl', start_index_shift=START_INDEX_SHIFT,
-    #            augmentation_radio=1.25)
+               dump_path=r'../data/dataset_single_smooth_20_40_four_fifth.pkl', start_index_shift=START_INDEX_SHIFT,
+               augmentation_radio=0.8)
+    wav2pickle(wav_base_path=r"D:\AcouInputDataSet\single",
+               dump_path=r'../data/dataset_single_smooth_20_40_five_fourth.pkl', start_index_shift=START_INDEX_SHIFT,
+               augmentation_radio=1.25)
