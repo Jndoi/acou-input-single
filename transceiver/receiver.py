@@ -13,6 +13,7 @@ import cv2
 from sklearn import preprocessing
 
 import numpy as np
+import time
 from utils.audio_utils import AudioUtils
 from transceiver.transmitter import Transmitter
 from constants.constants import *
@@ -23,7 +24,6 @@ from scipy.signal import savgol_filter
 import os
 from tqdm import tqdm
 from utils.data_augmentation_utils import augmentation_speed
-import cv2
 
 
 class Receiver(object):
@@ -85,22 +85,20 @@ class Receiver(object):
         plt.close()
 
     @classmethod
-    def select_dynamic_tap_by_ste(cls, real_phase, h, win_size=20):
+    def select_dynamic_tap_by_ste(cls, real_phase, abs_d_cir, win_size=20):
         """
         select select dynamic tap by energy and returns the selected phase
         :param win_size: the window size of short time energy to select the dynamic tap
         :param real_phase: the real phase of bottom
-        :param h: the dCIR
+        :param abs_d_cir: the dCIR
         :return: the one-dim selected real phase
         """
-        tap_size = h.shape[0]
+        tap_size = abs_d_cir.shape[0]
         slice_num = int(np.floor(real_phase.shape[1] / win_size))
-        short_time_energy = np.zeros((tap_size, slice_num))
-        h_ = h[:, 0: win_size * slice_num]  # 0 to slice_len * slice_num -1
-        for i in np.arange(0, tap_size):  # calculate the each slice energy in each tap
-            slice_frame = h_[i, :].reshape((win_size, -1), order='F')
-            short_time_energy[i, :] = sum(abs(slice_frame))
-        dynamic_tap = np.argmax(short_time_energy, axis=0)
+        h_ = abs_d_cir[:, 0: win_size * slice_num]  # 0 to slice_len * slice_num -1
+        # calculate the ste of each  taps
+        h_ = h_.reshape((tap_size, win_size, -1), order='F')
+        dynamic_tap = np.argmax(np.sum(h_, axis=1), axis=0)
         # assign the maximum tap value to each element of slice
         # np.tile: repeating dynamic_tap arr in (win_size, 1) times
         dynamic_tap = np.tile(dynamic_tap, (win_size, 1)).flatten(order='F')
@@ -109,8 +107,7 @@ class Receiver(object):
         phase_len = real_phase.shape[1]
         slices_len = dynamic_tap.shape[0]
         # show_signals(dynamic_tap)
-        dynamic_tap = np.r_[dynamic_tap, dynamic_tap_last * np.ones((phase_len - slices_len))]
-        dynamic_tap = dynamic_tap.astype(np.int)
+        dynamic_tap = np.r_[dynamic_tap, dynamic_tap_last * np.ones((phase_len - slices_len))].astype(np.int)
         diff_phase = np.diff(real_phase)
         dynamic_phase = np.zeros(phase_len)
         current_phase = 0
@@ -135,7 +132,6 @@ class Receiver(object):
         # make the initial phase begins at 0
         phase = phase - np.tile(phase[:, 0].reshape(tap_size, 1), frame_num)  # phase[:, 0] extend along the X axis
         diff_phase = np.diff(phase)
-
         real_phase = np.zeros((tap_size, frame_num))
         current_period = np.zeros(tap_size)
         # 2. If the phase difference exceeds the threshold, it will add or subtract 2pi
@@ -149,7 +145,7 @@ class Receiver(object):
                 else:
                     pass
                 real_phase[i, j] = phase[i, j] + current_period[i] * np.pi
-        return phase, real_phase
+        return real_phase
 
     @classmethod
     def demodulation(cls, data):
@@ -222,11 +218,6 @@ class Receiver(object):
         data = savgol_filter(data, window_length=win_length, polyorder=poly_order, mode="nearest")
         # show_signals(data)
         return data
-
-    @classmethod
-    def smooth_d_cir(cls, data):
-        # return AudioUtils.d_cir_low_pass(data)
-        return cls.smooth_data(data)
 
     @classmethod
     def remove_static_d_cir(cls, d_cir, thr=0.02):
@@ -382,6 +373,27 @@ class Receiver(object):
                               file_name=filename.split('.')[0] + '.png', is_frames=True)
         return abs_d_cir
 
+    @classmethod
+    def receive_with_real_phase(cls, base_path, filename, gen_img=False, img_save_path=None,
+                                start_index_shift=START_INDEX_SHIFT, augmentation_radio=None,
+                                device_type=DeviceType.HONOR30Pro):
+        data = cls.get_signals_by_filename(base_path, filename, start_index_shift=start_index_shift,
+                                           device_type=device_type)
+        data = cls.cal_d_cir(cls.demodulation(data), cls.gen_training_matrix())
+        data = cls.smooth_data(np.real(data)) + 1j * cls.smooth_data(np.imag(data))
+        abs_d_cir = np.abs(data)
+        real_phase = cls.cal_phase(data)
+        real_phase = cls.select_dynamic_tap_by_ste(real_phase, abs_d_cir, STEP // 2) * WaveLength * 25 / np.pi  # unit cm
+        real_phase = cls.smooth_data(real_phase)
+        if augmentation_radio:
+            abs_d_cir = augmentation_speed(abs_d_cir, speed_radio=augmentation_radio)
+            real_phase = augmentation_speed(real_phase, speed_radio=augmentation_radio)
+        split_abs_d_cir, split_real_phase = cls.split_abs_d_cir_phase(abs_d_cir, real_phase)
+        if gen_img:
+            cls.gen_d_cir_img(abs_d_cir, base_path=img_save_path,
+                              file_name=filename.split('.')[0] + '.png', is_frames=True)
+        return split_abs_d_cir, split_real_phase
+
 
 def gen_cir(base_path, label_arr):
     for label in label_arr:
@@ -400,10 +412,13 @@ if __name__ == '__main__':
     # show_d_cir(abs_d_cir, True)
     # show_signals(cls.smooth_data(np.std(data_abs, axis=0)))
     # a_1656738551359.wav
-    abs_d_cir = Receiver.receive(base_path=r'D:\Program\Tencent\QQ-Chat-Record\563496927\FileRecv\MobileFile',
-                                 filename='abcde_1662797957828.wav',
-                                 gen_img=False, start_index_shift=5)
-    # show_d_cir(abs_d_cir, is_frames=True)
+    split_abs_d_cir, split_real_phase = Receiver.receive_with_real_phase(
+        base_path=r'D:\Program\Tencent\QQ-Chat-Record\563496927\FileRecv\MobileFile',
+        filename='1662871121158.wav')
+    show_d_cir(split_abs_d_cir, is_frames=True)
+    print(split_real_phase.shape)
+    show_signals(split_real_phase.reshape((-1), order='C')*0.025)  # order='C' 先行再列 order='F' 先列再行
+    show_signals(split_real_phase.T*0.025)  # order='C' 先行再列 order='F' 先列再行
     # print(abs_d_cir.shape)
     # for c in abs_d_cir:
     #     show_d_cir(c.squeeze(), False)

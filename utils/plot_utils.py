@@ -36,7 +36,7 @@ def show_signals(signals, is_frames=False):
         frame = signals
     # frame = frame.squeeze()
     plt.plot(frame, linewidth=0.5)
-    plt.plot(np.ones(frame.shape)*3, linewidth=0.5)
+    # plt.plot(np.ones(frame.shape)*3, linewidth=0.5)
     plt.show()
 
 

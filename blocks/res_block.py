@@ -34,7 +34,7 @@ class ResBasicBlock(nn.Module):
     def forward(self, x):
         out = self.conv1(x)
         out = self.conv2(out)
-        out = F.dropout(out, 0.1) + self.shortcut(x)  # add ca attention and dropout
+        out = F.dropout(out, 0.2) + self.shortcut(x)  # add ca attention and dropout
         # out = F.dropout(self.ca(out), 0.1) + self.shortcut(x)  # add ca attention and dropout
         # out = F.dropout(self.se(out), 0.1) + self.shortcut(x)  # add se attention and dropout
         # out = F.dropout(out, 0.1) + self.shortcut(x)  # add dropout

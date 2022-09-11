@@ -37,19 +37,22 @@ def is_static(one_step_data, threshold):  # 每次传入(20, 120)的数据
 def padding_signals(data, data_type, target_frames_num):
     # data_type: DataType.AbsDCir, DataType.RealPhase
     # show_d_cir(data.reshape(-1, tap_size, window_size))
+
     if data.shape[0] >= target_frames_num:  # need not padding
         return data
-    padding_method = SignalPaddingTypeMap.get(data_type)
-    if padding_method == SignalPaddingType.ZeroPadding and data_type == DataType.AbsDCir:
-        data = np.r_[data, np.zeros((target_frames_num - data.shape[0], data.shape[1], data.shape[2], data.shape[3]), dtype=np.uint8)]
-    elif padding_method == SignalPaddingType.LastValuePadding and data_type == DataType.RealPhase:
-        data = np.r_[data, np.zeros((target_frames_num - data.shape[0], data.shape[1]), dtype=np.int16)]
+    if data_type == DataType.AbsDCir:
+        data = np.r_[data, np.zeros((target_frames_num - data.shape[0], data.shape[1], data.shape[2], data.shape[3]),
+                                    dtype=np.uint8)]
+    elif data_type == DataType.RealPhase:
+        last_phase = data[-1, -1]  # find the last value
+        data = np.r_[data, np.ones((target_frames_num - data.shape[0], data.shape[1]),
+                                   dtype=np.int16) * last_phase]
     else:
-        raise Exception("padding_method and data_type don\'t match")
+        raise Exception("padding method and data type don\'t match")
     return data
 
 
-def padding_batch_signals(data):
+def padding_batch_signals(data, data_type):
     # 1. find the max length of signals in a batch
     max_len = 0
     for item in data:
@@ -57,14 +60,21 @@ def padding_batch_signals(data):
     batch_size = len(data)
     # 2. padding d cir data and phase data
     d_cir_x = []
-    # phase_x = []
     y = []
-    for i in range(0, batch_size):
-        d_cir_x.append(padding_signals(data[i][0], DataType.AbsDCir, max_len))
-        # phase_x.append(padding_signals(data[i][1], DataType.RealPhase, max_len))
-        y.append(data[i][1])
-    # return torch.tensor(np.array(d_cir_x)), torch.tensor(np.array(phase_x)), torch.tensor(np.array(y))
-    return torch.tensor(np.array(d_cir_x)), torch.tensor(np.array(y))
+    if data_type == DataType.AbsDCir:
+        for i in range(0, batch_size):
+            d_cir_x.append(padding_signals(data[i][0], DataType.AbsDCir, max_len))
+            y.append(data[i][1])
+        return torch.tensor(np.array(d_cir_x)), torch.tensor(np.array(y))
+    elif data_type == DataType.AbsDCirAndRealPhase:
+        phase_x = []
+        for i in range(0, batch_size):
+            d_cir_x.append(padding_signals(data[i][0], DataType.AbsDCir, max_len))
+            phase_x.append(padding_signals(data[i][1], DataType.RealPhase, max_len))
+            y.append(data[i][2])
+        return torch.tensor(np.array(d_cir_x)), torch.tensor(np.array(phase_x)), torch.tensor(np.array(y))
+    else:
+        raise Exception("Data Type error")
 
 
 def decode_labels(label):
