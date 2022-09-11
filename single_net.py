@@ -39,8 +39,9 @@ class Conv2dWithBN(nn.Module):
 
 
 class Net(nn.Module):
-    def __init__(self, layers, in_channels, gru_input_size, gru_hidden_size, num_classes):
+    def __init__(self, layers, in_channels, gru_input_size, gru_hidden_size, num_classes, num_layers=2):
         super().__init__()
+        self.num_layers = num_layers
         self.layers = layers
         self.in_channels = in_channels
         self.gru_hidden_size = gru_hidden_size
@@ -55,9 +56,9 @@ class Net(nn.Module):
             nn.AdaptiveAvgPool2d(1),
             nn.Flatten()
         )
-        self.gru = nn.GRU(self.gru_input_size, self.gru_hidden_size, num_layers=1)
+        self.gru = nn.GRU(self.gru_input_size, self.gru_hidden_size, num_layers=num_layers, dropout=0.1)
         self.cls = nn.Sequential(
-            nn.Linear(self.gru_hidden_size, self.num_classes),
+            nn.Linear(self.gru_hidden_size*num_layers, self.num_classes),
             nn.LogSoftmax(dim=-1)
         )
 
@@ -70,6 +71,8 @@ class Net(nn.Module):
         x = torch.cat(conv_items, 0)    # shape of x: (sequence_length, batch_size, features)
         _, h_n = self.gru(x)    # shape of x: (sequence_length, batch_size, gru_hidden_size)
         # shape of h_n: (1, batch_size, gru_hidden_size)
+        h_n = h_n.transpose(0, 1)
+        h_n = h_n.reshape(h_n.shape[0], -1)
         output = self.cls(h_n.squeeze(0))  # shape of x: (batch_size, num_classes)
         return output
 

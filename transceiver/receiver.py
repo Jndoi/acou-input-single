@@ -13,7 +13,7 @@ import cv2
 from sklearn import preprocessing
 
 import numpy as np
-import time
+from scipy.fftpack import fft
 from utils.audio_utils import AudioUtils
 from transceiver.transmitter import Transmitter
 from constants.constants import *
@@ -363,8 +363,8 @@ class Receiver(object):
         data = cls.cal_d_cir(cls.demodulation(data), cls.gen_training_matrix())
         data = cls.smooth_data(np.real(data)) + 1j * cls.smooth_data(np.imag(data))
         data_abs = np.abs(data)
-        is_static(data_abs, 0)
-        show_d_cir(data_abs)
+        # is_static(data_abs, 0)
+        # show_d_cir(data_abs)
         if augmentation_radio:
             data_abs = augmentation_speed(data_abs, speed_radio=augmentation_radio)
         abs_d_cir = cls.split_abs_d_cir(data_abs)
@@ -412,13 +412,11 @@ if __name__ == '__main__':
     # show_d_cir(abs_d_cir, True)
     # show_signals(cls.smooth_data(np.std(data_abs, axis=0)))
     # a_1656738551359.wav
-    split_abs_d_cir, split_real_phase = Receiver.receive_with_real_phase(
+    split_abs_d_cir = Receiver.receive(
         base_path=r'D:\Program\Tencent\QQ-Chat-Record\563496927\FileRecv\MobileFile',
         filename='1662871121158.wav')
     show_d_cir(split_abs_d_cir, is_frames=True)
-    print(split_real_phase.shape)
-    show_signals(split_real_phase.reshape((-1), order='C')*0.025)  # order='C' 先行再列 order='F' 先列再行
-    show_signals(split_real_phase.T*0.025)  # order='C' 先行再列 order='F' 先列再行
+    # show_signals(split_real_phase.T*0.025)  # order='C' 先行再列 order='F' 先列再行
     # print(abs_d_cir.shape)
     # for c in abs_d_cir:
     #     show_d_cir(c.squeeze(), False)

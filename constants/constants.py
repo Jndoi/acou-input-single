@@ -84,7 +84,7 @@ DEFAULT_CONFIG = {
     "DeviceType": DeviceType.HONOR30Pro,
     "DatasetLoadType": DatasetLoadType.TrainValidAndTest,
     "SignalType": SignalType.Barker,
-    "DataType": DataType.AbsDCirAndRealPhase,
+    "DataType": DataType.AbsDCir,
     "SignalPaddingType": SignalPaddingType.ZeroPadding,
 }
 
