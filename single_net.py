@@ -130,7 +130,13 @@ def train():
     print_model_parm_nums(net)
     data_path = [r"data/dataset_single_smooth_20_40.pkl",
                  r"data/dataset_single_smooth_20_40_10cm.pkl",
-                 r"data/dataset_single_smooth_20_40_20cm.pkl"]
+                 r"data/dataset_single_smooth_20_40_20cm.pkl",
+                 r"data/dataset_single_smooth_20_40_five_fourth.pkl",
+                 r"data/dataset_single_smooth_20_40_four_fifth.pkl",
+                 r"data/dataset_single_smooth_20_40_10cm_five_fourth.pkl",
+                 r"data/dataset_single_smooth_20_40_20cm_five_fourth.pkl",
+                 r"data/dataset_single_smooth_20_40_10cm_four_fifth.pkl",
+                 r"data/dataset_single_smooth_20_40_20cm_four_fifth.pkl"]
     save = True
     loss_func = nn.CrossEntropyLoss()
     optimizer = torch.optim.AdamW(net.parameters(), lr=LR, weight_decay=0.01)
@@ -218,10 +224,10 @@ def predict(base_path, filename):
 # valid: 1813/1950, acc 0.929744
 # test: 1812/1950, acc 0.929231
 if __name__ == '__main__':
-    train()
-    # import os
-    # files = os.listdir(r"D:\AcouInputDataSet\single_test")
-    # predict(r"D:\AcouInputDataSet\single_test", files)
+    # train()
+    import os
+    files = os.listdir(r"D:\AcouInputDataSet\single_test")
+    predict(r"D:\AcouInputDataSet\single_test", files)
     # 0.777
     # train loss: 26.8 train acc: 0.9934
     # valid: 1147/1170, acc 0.980342

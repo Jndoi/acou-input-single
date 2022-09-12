@@ -6,14 +6,6 @@
 @Software ：PyCharm
 
 """
-import math
-import pickle
-import cv2
-
-from sklearn import preprocessing
-
-import numpy as np
-from scipy.fftpack import fft
 from utils.audio_utils import AudioUtils
 from transceiver.transmitter import Transmitter
 from constants.constants import *
