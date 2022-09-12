@@ -20,10 +20,11 @@ def smooth_data(data, win_length=11, poly_order=2):
 
 
 def is_static(one_step_data, threshold):  # 每次传入(20, 120)的数据
-    one_step_data_std = smooth_data(np.std(one_step_data, axis=0))
+    one_step_data_std = smooth_data(np.var(one_step_data, axis=0))
     one_step_data_energy = smooth_data(np.sum(one_step_data, axis=0))
     show_signals(one_step_data_std)
     show_signals(one_step_data_energy)
+    show_signals(one_step_data_std > threshold)
     # data_abs_append_std = cls.smooth_data(data_abs_append.std(axis=0))
     # data_abs_append_std_sum = data_abs_append_std
     # data_abs_append_std_sum = np.sum(data_abs_append_std.reshape((5, -1), order='F'), axis=0)

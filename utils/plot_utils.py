@@ -77,17 +77,17 @@ def show_d_cir(d_cir, is_frames=False):
         d_cir = d_cir.squeeze()
         d_cir = np.transpose(d_cir, [1, 0, 2])
         d_cir = np.reshape(d_cir, (d_cir.shape[0], -1), order='C')
-    # plt.rcParams['font.family'] = 'Times New Roman'
-    # plt.rcParams['font.size'] = 18
-    # plt.rcParams['axes.linewidth'] = 2
-    # plt.xlabel("Time (sec)")
-    # plt.ylabel("Tap Index")
-    plt.axis('off')
+    plt.rcParams['font.family'] = 'Times New Roman'
+    plt.rcParams['font.size'] = 18
+    plt.rcParams['axes.linewidth'] = 2
+    plt.xlabel("Time (sec)")
+    plt.ylabel("Tap Index")
     plt.pcolormesh(np.arange(0, d_cir.shape[1])/100.0, np.arange(1, d_cir.shape[0]+1), d_cir, cmap='jet', shading='auto')
-    plt.gca().xaxis.set_major_locator(plt.NullLocator())
-    plt.gca().yaxis.set_major_locator(plt.NullLocator())
-    plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
-    plt.margins(0, 0)
+    # plt.axis('off')
+    # plt.gca().xaxis.set_major_locator(plt.NullLocator())
+    # plt.gca().yaxis.set_major_locator(plt.NullLocator())
+    # plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
+    # plt.margins(0, 0)
     plt.show()
 
 

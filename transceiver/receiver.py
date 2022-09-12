@@ -363,7 +363,7 @@ class Receiver(object):
         data = cls.cal_d_cir(cls.demodulation(data), cls.gen_training_matrix())
         data = cls.smooth_data(np.real(data)) + 1j * cls.smooth_data(np.imag(data))
         data_abs = np.abs(data)
-        # is_static(data_abs, 0)
+        # is_static(data_abs, 6)
         # show_d_cir(data_abs)
         if augmentation_radio:
             data_abs = augmentation_speed(data_abs, speed_radio=augmentation_radio)

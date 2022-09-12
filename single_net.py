@@ -21,7 +21,7 @@ import datetime
 
 
 BATCH_SIZE = 8
-EPOCH = 30
+EPOCH = 15
 LR = 1e-3
 
 
@@ -86,7 +86,7 @@ class Net(nn.Module):
                            nn.Dropout(0.1)]
                 in_channels = arg
             elif arg == "M":
-                layers += [nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2))]
+                layers += [nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2), ceil_mode=True)]
             elif arg.startswith("SE_"):
                 layers += [SEBlock(int(arg.split("SE_")[1]), 4)]
             elif arg.startswith("CA_"):
@@ -125,13 +125,15 @@ def train():
     # 0.838462
     # [16, "M", 32,  "M", 48, "M", 64]
     # Conv2dWithBN(1, in_channels, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
-    args = ["RES_32", "M", "RES_32", "M", "RES_64", "M", "RES_64", "SE_64"]
+    args = ["RES_32", "M", "RES_32", "M", "RES_64", "M", "RES_64"]
     net = Net(layers=args, in_channels=32, gru_input_size=64, gru_hidden_size=64, num_classes=26).cuda()
     print_model_parm_nums(net)
-    data_path = [r"data/dataset_single_smooth_20_40.pkl", ]
+    data_path = [r"data/dataset_single_smooth_20_40.pkl",
+                 r"data/dataset_single_smooth_20_40_10cm.pkl",
+                 r"data/dataset_single_smooth_20_40_20cm.pkl"]
     save = True
     loss_func = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(net.parameters(), lr=LR, weight_decay=0.002)
+    optimizer = torch.optim.AdamW(net.parameters(), lr=LR, weight_decay=0.01)
     # state_dict = torch.load('single_net_params.pth')  # 2028 569
     # net.load_state_dict(state_dict)
     train_loader, valid_loader, test_loader = get_data_loader(loader_type=DatasetLoadType.TrainValidAndTest,
@@ -174,7 +176,7 @@ def train():
 
 
 def predict(base_path, filename):
-    args = ["SE_32", "RES_32", "M", "RES_32", "M", "RES_64", "M", "RES_64"]
+    args = ["RES_32", "M", "RES_32", "M", "RES_64", "M", "RES_64"]
     net = Net(layers=args, in_channels=32, gru_input_size=64, gru_hidden_size=64, num_classes=26).cuda()
     state_dict = torch.load('model/single_net_params_data_augmentation.pth')  # 2028 569
     # state_dict = torch.load('single_net_params.pth')  # 2028 569
@@ -221,3 +223,6 @@ if __name__ == '__main__':
     # files = os.listdir(r"D:\AcouInputDataSet\single_test")
     # predict(r"D:\AcouInputDataSet\single_test", files)
     # 0.777
+    # train loss: 26.8 train acc: 0.9934
+    # valid: 1147/1170, acc 0.980342
+    # test: 1150/1170, acc 0.982906
