@@ -50,7 +50,7 @@ class Net(nn.Module):
         self.conv = nn.Sequential(
             nn.Sequential(
                 Conv2dWithBN(1, in_channels, kernel_size=(5, 5), stride=(2, 2), padding=(2, 2)),
-                nn.Dropout(0.2)
+                nn.Dropout(0.1)
             ),
             self.make_conv_layers(layers),
             nn.AdaptiveAvgPool2d(1),
@@ -125,7 +125,7 @@ def train():
     # 0.838462
     # [16, "M", 32,  "M", 48, "M", 64]
     # Conv2dWithBN(1, in_channels, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
-    args = ["SE_32", "RES_32", "M", "RES_32",  "M", "RES_64", "M", "RES_64"]
+    args = ["RES_32", "M", "RES_32", "M", "RES_64", "M", "RES_64", "SE_64"]
     net = Net(layers=args, in_channels=32, gru_input_size=64, gru_hidden_size=64, num_classes=26).cuda()
     print_model_parm_nums(net)
     data_path = [r"data/dataset_single_smooth_20_40.pkl", ]
@@ -174,7 +174,7 @@ def train():
 
 
 def predict(base_path, filename):
-    args = ["RES_32", "M", "RES_32",  "M", "RES_64", "M", "RES_64"]
+    args = ["SE_32", "RES_32", "M", "RES_32", "M", "RES_64", "M", "RES_64"]
     net = Net(layers=args, in_channels=32, gru_input_size=64, gru_hidden_size=64, num_classes=26).cuda()
     state_dict = torch.load('model/single_net_params_data_augmentation.pth')  # 2028 569
     # state_dict = torch.load('single_net_params.pth')  # 2028 569
@@ -197,9 +197,9 @@ def predict(base_path, filename):
             split_d_cir = torch.tensor(split_d_cir).float() / 255
             split_d_cir = split_d_cir.unsqueeze(0)  # add batch_size dim: torch.Size([1, 4, 1, 60, 60])
             output = net(split_d_cir.cuda())
-            predicted = torch.argmax(output, 1)
-            arr.append(predicted.cpu().numpy()[0])
-            char_dict[label].append(chr(predicted.cpu().numpy()[0]+ord('a')))
+            predicted = torch.argmax(output, 0)
+            arr.append(predicted.cpu().numpy())
+            char_dict[label].append(chr(predicted.cpu().numpy()+ord('a')))
             # print("{} {}".format(file, predicted.data))
         total = 0
         correct = 0
