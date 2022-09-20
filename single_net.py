@@ -39,9 +39,8 @@ class Conv2dWithBN(nn.Module):
 
 
 class Net(nn.Module):
-    def __init__(self, layers, in_channels, gru_input_size, gru_hidden_size, num_classes, num_layers=2):
+    def __init__(self, layers, in_channels, gru_input_size, gru_hidden_size, num_classes):
         super().__init__()
-        self.num_layers = num_layers
         self.layers = layers
         self.in_channels = in_channels
         self.gru_hidden_size = gru_hidden_size
@@ -56,9 +55,9 @@ class Net(nn.Module):
             nn.AdaptiveAvgPool2d(1),
             nn.Flatten()
         )
-        self.gru = nn.GRU(self.gru_input_size, self.gru_hidden_size, num_layers=num_layers, dropout=0.1)
+        self.gru = nn.GRU(self.gru_input_size, self.gru_hidden_size, num_layers=1)
         self.cls = nn.Sequential(
-            nn.Linear(self.gru_hidden_size*num_layers, self.num_classes),
+            nn.Linear(self.gru_hidden_size, self.num_classes),
             nn.LogSoftmax(dim=-1)
         )
 
@@ -124,19 +123,18 @@ def train():
     # ["RES_32", "M", "RES_32",  "M", "RES_64", "M", "RES_64"]
     # 0.838462
     # [16, "M", 32,  "M", 48, "M", 64]
-    # Conv2dWithBN(1, in_channels, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
     args = ["RES_32", "M", "RES_32", "M", "RES_64", "M", "RES_64"]
     net = Net(layers=args, in_channels=32, gru_input_size=64, gru_hidden_size=64, num_classes=26).cuda()
     print_model_parm_nums(net)
     data_path = [r"data/dataset_single_smooth_20_40.pkl",
                  r"data/dataset_single_smooth_20_40_10cm.pkl",
-                 r"data/dataset_single_smooth_20_40_20cm.pkl",
-                 r"data/dataset_single_smooth_20_40_five_fourth.pkl",
-                 r"data/dataset_single_smooth_20_40_four_fifth.pkl",
-                 r"data/dataset_single_smooth_20_40_10cm_five_fourth.pkl",
-                 r"data/dataset_single_smooth_20_40_20cm_five_fourth.pkl",
-                 r"data/dataset_single_smooth_20_40_10cm_four_fifth.pkl",
-                 r"data/dataset_single_smooth_20_40_20cm_four_fifth.pkl"]
+                 r"data/dataset_single_smooth_20_40_20cm.pkl"]
+    # r"data/dataset_single_smooth_20_40_five_fourth.pkl",
+    # r"data/dataset_single_smooth_20_40_four_fifth.pkl",
+    # r"data/dataset_single_smooth_20_40_10cm_five_fourth.pkl",
+    # r"data/dataset_single_smooth_20_40_20cm_five_fourth.pkl",
+    # r"data/dataset_single_smooth_20_40_10cm_four_fifth.pkl",
+    # r"data/dataset_single_smooth_20_40_20cm_four_fifth.pkl"
     save = True
     loss_func = nn.CrossEntropyLoss()
     optimizer = torch.optim.AdamW(net.parameters(), lr=LR, weight_decay=0.01)
@@ -211,24 +209,21 @@ def predict(base_path, filename):
             # print("{} {}".format(file, predicted.data))
         total = 0
         correct = 0
+        res = []
         for key, value in char_dict.items():
             item_total = len(value)
             item_correct = value.count(key)
+            res.append(item_correct/item_total)
             print("{} {} {}".format(key, value, item_correct/item_total))
             total += item_total
             correct += item_correct
         print("acc:{}".format(correct/total))
+        print(res)
 
 
-# train loss: 68.18 train acc: 0.9847
-# valid: 1813/1950, acc 0.929744
-# test: 1812/1950, acc 0.929231
 if __name__ == '__main__':
-    # train()
-    import os
-    files = os.listdir(r"D:\AcouInputDataSet\single_test")
-    predict(r"D:\AcouInputDataSet\single_test", files)
-    # 0.777
-    # train loss: 26.8 train acc: 0.9934
-    # valid: 1147/1170, acc 0.980342
-    # test: 1150/1170, acc 0.982906
+    train()
+    # import os
+    # files = os.listdir(r"D:\AcouInputDataSet\single_test")
+    # predict(r"D:\AcouInputDataSet\single_test", files)
+    # 0.85
