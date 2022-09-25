@@ -123,12 +123,12 @@ def train():
     # ["RES_32", "M", "RES_32",  "M", "RES_64", "M", "RES_64"]
     # 0.838462
     # [16, "M", 32,  "M", 48, "M", 64]
-    args = ["RES_32", "M", "RES_32", "M", "RES_64", "M", "RES_64"]
+    args = ["RES_16", "M", "RES_32", "M", "RES_32", "M", "RES_64"]
     net = Net(layers=args, in_channels=32, gru_input_size=64, gru_hidden_size=64, num_classes=26).cuda()
     print_model_parm_nums(net)
-    data_path = [r"data/dataset_single_smooth_20_40.pkl",
-                 r"data/dataset_single_smooth_20_40_10cm.pkl",
-                 r"data/dataset_single_smooth_20_40_20cm.pkl"]
+    data_path = [r"data/dataset_single_smooth_20_40.pkl", ]
+    # r"data/dataset_single_smooth_20_40_10cm.pkl",
+    # r"data/dataset_single_smooth_20_40_20cm.pkl",
     # r"data/dataset_single_smooth_20_40_five_fourth.pkl",
     # r"data/dataset_single_smooth_20_40_four_fifth.pkl",
     # r"data/dataset_single_smooth_20_40_10cm_five_fourth.pkl",
