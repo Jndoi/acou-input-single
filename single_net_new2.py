@@ -225,8 +225,8 @@ def predict(base_path, filename):
 
 
 if __name__ == '__main__':
-    train()
-    # import os
-    # files = os.listdir(r"D:\AcouInputDataSet\single_test")
-    # predict(r"D:\AcouInputDataSet\single_test", files)
+    # train()
+    import os
+    files = os.listdir(r"D:\AcouInputDataSet\single_test")
+    predict(r"D:\AcouInputDataSet\single_test", files)
     # 0.85
