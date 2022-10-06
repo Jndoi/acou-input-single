@@ -72,7 +72,7 @@ DefaultPhaseThreshold = 0.6
 FRAME_LENGTH = 480
 
 # CIR
-TAP_SIZE = 60
+TAP_SIZE = 120
 WINDOW_SIZE = 40  # 0.4s
 STEP = 20  # overlap = 50%
 P_VALUE = 192
