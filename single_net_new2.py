@@ -57,7 +57,7 @@ class Net(nn.Module):
         )
         self.gru = nn.GRU(self.gru_input_size, self.gru_hidden_size, num_layers=1)
         self.cls = nn.Sequential(
-            nn.Dropout(0.1),
+            # nn.Dropout(0.1),
             nn.Linear(self.gru_hidden_size, self.num_classes),
             nn.LogSoftmax(dim=-1)
         )
@@ -127,14 +127,8 @@ def train():
                  r"data/dataset_single_smooth_20_40_10cm.pkl",
                  r"data/dataset_single_smooth_20_40_20cm.pkl",
                  r"data/dataset_single_smooth_20_40_five_fourth.pkl",
-                 r"data/dataset_single_smooth_20_40_four_fifth.pkl"
-
-    ]
-    # r"data/dataset_single_smooth_20_40_10cm_five_fourth.pkl",
-    # r"data/dataset_single_smooth_20_40_20cm_five_fourth.pkl",
-    # r"data/dataset_single_smooth_20_40_10cm_four_fifth.pkl",
-    # r"data/dataset_single_smooth_20_40_20cm_four_fifth.pkl"
-    save = True
+                 r"data/dataset_single_smooth_20_40_four_fifth.pkl"]
+    # save = True
     loss_func = nn.CrossEntropyLoss()
     optimizer = torch.optim.AdamW(net.parameters(), lr=LR, weight_decay=0.01)
     # state_dict = torch.load('single_net_params.pth')  # 2028 569
@@ -174,8 +168,9 @@ def train():
             print("train loss: {} train acc: {}".format(round(epoch_loss, 2), round(correct*1.0/train_size, 4)))
             evaluate(valid_loader, net, "valid", valid_size)
             evaluate(test_loader, net, "test", test_size)
-    if save:
-        torch.save(net.state_dict(), 'model/single_net_params_data_augmentation.pth')
+            torch.save(net.state_dict(), 'model/single_net_params_data_augmentation.pth')
+    # if save:
+    #     torch.save(net.state_dict(), 'model/single_net_params_data_augmentation.pth')
 
 
 def predict(base_path, filename):
