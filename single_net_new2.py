@@ -120,12 +120,8 @@ def print_model_parm_nums(model):
 
 
 def train():
-    # 0.902564
-    # ["RES_32", "M", "RES_32",  "M", "RES_64", "M", "RES_128"]
-    # 0.838462
-    # [16, "M", 32,  "M", 48, "M", 64]
-    args = ["RES_64", "M", "RES_128", "M", "RES_256"]
-    net = Net(layers=args, in_channels=32, gru_input_size=256, gru_hidden_size=128, num_classes=26).cuda()
+    args = ["RES_32", "M", "RES_64", "M", "RES_128"]
+    net = Net(layers=args, in_channels=16, gru_input_size=128, gru_hidden_size=64, num_classes=26).cuda()
     print_model_parm_nums(net)
     data_path = [r"data/dataset_single_smooth_20_40.pkl",
                  r"data/dataset_single_smooth_20_40_10cm.pkl",
@@ -183,8 +179,8 @@ def train():
 
 
 def predict(base_path, filename):
-    args = ["RES_64", "M", "RES_128", "M", "RES_256"]
-    net = Net(layers=args, in_channels=32, gru_input_size=256, gru_hidden_size=128, num_classes=26).cuda()
+    args = ["RES_32", "M", "RES_64", "M", "RES_128"]
+    net = Net(layers=args, in_channels=16, gru_input_size=128, gru_hidden_size=64, num_classes=26).cuda()
     state_dict = torch.load('model/single_net_params_data_augmentation.pth')  # 2028 569
     # state_dict = torch.load('single_net_params.pth')  # 2028 569
     net.load_state_dict(state_dict)
@@ -229,4 +225,3 @@ if __name__ == '__main__':
     import os
     files = os.listdir(r"D:\AcouInputDataSet\single_test")
     predict(r"D:\AcouInputDataSet\single_test", files)
-    # 0.85
