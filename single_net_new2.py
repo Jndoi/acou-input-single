@@ -55,10 +55,10 @@ class Net(nn.Module):
             nn.AdaptiveAvgPool2d(1),
             nn.Flatten()
         )
-        self.gru = nn.GRU(self.gru_input_size, self.gru_hidden_size, num_layers=1)
+        self.gru = nn.GRU(self.gru_input_size, self.gru_hidden_size, num_layers=2)
         self.cls = nn.Sequential(
             # nn.Dropout(0.1),
-            nn.Linear(self.gru_hidden_size, self.num_classes),
+            nn.Linear(self.gru_hidden_size * 2, self.num_classes),
             nn.LogSoftmax(dim=-1)
         )
 
@@ -83,7 +83,7 @@ class Net(nn.Module):
             if type(arg) == int:
                 layers += [Conv2dWithBN(in_channels=in_channels, out_channels=arg,
                                         kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
-                           nn.Dropout(0.1)]
+                      nn.Dropout(0.1)]
                 in_channels = arg
             elif arg == "M":
                 layers += [nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2), ceil_mode=True)]
@@ -120,15 +120,24 @@ def print_model_parm_nums(model):
 
 
 def train():
-    args = ["RES_32", "M", "RES_64", "M", "RES_128"]
+    # 0.902564
+    # ["RES_32", "M", "RES_32",  "M", "RES_64", "M", "RES_128"]
+    # 0.838462
+    # [16, "M", 32,  "M", 48, "M", 64]
+    args = [32, "M", 64, "M", 128]
     net = Net(layers=args, in_channels=16, gru_input_size=128, gru_hidden_size=64, num_classes=26).cuda()
     print_model_parm_nums(net)
-    data_path = [r"data/dataset_single_smooth_20_40.pkl",
-                 r"data/dataset_single_smooth_20_40_10cm.pkl",
-                 r"data/dataset_single_smooth_20_40_20cm.pkl",
-                 r"data/dataset_single_smooth_20_40_five_fourth.pkl",
-                 r"data/dataset_single_smooth_20_40_four_fifth.pkl"]
-    # save = True
+    data_path = [
+                    r"data/dataset_single_smooth_20_40.pkl",
+                    r"data/dataset_single_smooth_20_40_10cm.pkl",
+                    r"data/dataset_single_smooth_20_40_20cm.pkl",
+                    r"data/dataset_single_smooth_20_40_five_fourth.pkl",
+                    r"data/dataset_single_smooth_20_40_four_fifth.pkl"
+                ]
+    # r"data/dataset_single_smooth_20_40_10cm_five_fourth.pkl",
+    # r"data/dataset_single_smooth_20_40_20cm_five_fourth.pkl",
+    # r"data/dataset_single_smooth_20_40_10cm_four_fifth.pkl",
+    # r"data/dataset_single_smooth_20_40_20cm_four_fifth.pkl"
     loss_func = nn.CrossEntropyLoss()
     optimizer = torch.optim.AdamW(net.parameters(), lr=LR, weight_decay=0.01)
     # state_dict = torch.load('single_net_params.pth')  # 2028 569
@@ -168,15 +177,13 @@ def train():
             print("train loss: {} train acc: {}".format(round(epoch_loss, 2), round(correct*1.0/train_size, 4)))
             evaluate(valid_loader, net, "valid", valid_size)
             evaluate(test_loader, net, "test", test_size)
-            torch.save(net.state_dict(), 'model/single_net_params_data_augmentation.pth')
-    # if save:
-    #     torch.save(net.state_dict(), 'model/single_net_params_data_augmentation.pth')
+            torch.save(net.state_dict(), 'model/params_{}epochs.pth'.format(epoch+1))
 
 
 def predict(base_path, filename):
-    args = ["RES_32", "M", "RES_64", "M", "RES_128"]
+    args = [32, "M", 64, "M", 128]
     net = Net(layers=args, in_channels=16, gru_input_size=128, gru_hidden_size=64, num_classes=26).cuda()
-    state_dict = torch.load('model/single_net_params_data_augmentation.pth')  # 2028 569
+    state_dict = torch.load('model/params_15epochs.pth')  # 2028 569
     # state_dict = torch.load('single_net_params.pth')  # 2028 569
     net.load_state_dict(state_dict)
     if net is None or base_path is None or filename is None:
