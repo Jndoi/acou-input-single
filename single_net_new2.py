@@ -20,7 +20,7 @@ from blocks.res_block import ResBasicBlock
 import datetime
 
 
-BATCH_SIZE = 16
+BATCH_SIZE = 8
 EPOCH = 15
 LR = 1e-3
 
