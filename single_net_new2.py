@@ -20,7 +20,7 @@ from blocks.res_block import ResBasicBlock
 import datetime
 
 
-BATCH_SIZE = 8
+BATCH_SIZE = 16
 EPOCH = 15
 LR = 1e-3
 
@@ -49,7 +49,8 @@ class Net(nn.Module):
         self.conv = nn.Sequential(
             nn.Sequential(
                 Conv2dWithBN(1, in_channels, kernel_size=(5, 5), stride=(2, 2), padding=(2, 2)),
-                nn.MaxPool2d(kernel_size=(3, 3), stride=(2, 2), ceil_mode=True)
+                nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2))
+                # nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2), ceil_mode=True)
             ),
             self.make_conv_layers(layers),
             nn.AdaptiveAvgPool2d(1),
@@ -83,7 +84,7 @@ class Net(nn.Module):
             if type(arg) == int:
                 layers += [Conv2dWithBN(in_channels=in_channels, out_channels=arg,
                                         kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
-                      nn.Dropout(0.1)]
+                            nn.Dropout(0.1)]
                 in_channels = arg
             elif arg == "M":
                 layers += [nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2), ceil_mode=True)]
@@ -128,11 +129,11 @@ def train():
     net = Net(layers=args, in_channels=16, gru_input_size=128, gru_hidden_size=64, num_classes=26).cuda()
     print_model_parm_nums(net)
     data_path = [
-                    r"data/dataset_single_smooth_20_40.pkl",
+                    # r"data/dataset_single_smooth_20_40.pkl",
                     r"data/dataset_single_smooth_20_40_10cm.pkl",
-                    r"data/dataset_single_smooth_20_40_20cm.pkl",
-                    r"data/dataset_single_smooth_20_40_five_fourth.pkl",
-                    r"data/dataset_single_smooth_20_40_four_fifth.pkl"
+                    # r"data/dataset_single_smooth_20_40_20cm.pkl",
+                    # r"data/dataset_single_smooth_20_40_five_fourth.pkl",
+                    # r"data/dataset_single_smooth_20_40_four_fifth.pkl"
                 ]
     # r"data/dataset_single_smooth_20_40_10cm_five_fourth.pkl",
     # r"data/dataset_single_smooth_20_40_20cm_five_fourth.pkl",
@@ -223,7 +224,7 @@ def predict(base_path, filename):
 
 
 if __name__ == '__main__':
-    # train()
-    import os
-    files = os.listdir(r"D:\AcouInputDataSet\single_test")
-    predict(r"D:\AcouInputDataSet\single_test", files)
+    train()
+    # import os
+    # files = os.listdir(r"D:\AcouInputDataSet\single_test")
+    # predict(r"D:\AcouInputDataSet\single_test", files)

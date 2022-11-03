@@ -368,8 +368,14 @@ class Receiver(object):
                 curr_data_abs = augmentation_speed(curr_data_abs, speed_radio=augmentation_radio)
             curr_data_abs = cls.split_abs_d_cir(curr_data_abs)
             return curr_data_abs
-            # show_d_cir(curr_data_abs, is_frames=True)
-            # return curr_data_abs
+        print(filename)
+        os.remove(os.path.join(base_path, filename))
+        # if augmentation_radio:
+        #     data_abs = augmentation_speed(data_abs, speed_radio=augmentation_radio)
+        # curr_data_abs = cls.split_abs_d_cir(data_abs)
+        # return curr_data_abs
+        # show_d_cir(curr_data_abs, is_frames=True)
+        # return curr_data_abs
 
     @classmethod
     def receive_with_real_phase(cls, base_path, filename, gen_img=False, img_save_path=None,
