@@ -68,7 +68,9 @@ class AudioUtils(object):
         :return: the start index of signal
         """
         frame_len = template.shape[0]
-        frame_num = int(np.floor(Fs / frame_len))  # pick 1s audio to find the start frame
+        # times = 0.2  # 可以只管前0.2s
+        times = 1  # 只管前0.2s
+        frame_num = int(np.floor(Fs * times / frame_len))  # pick 1s audio to find the start frame
         len_y = y.shape[0]
         if len_y < frame_num * frame_len:  # if the length of audio is less than 1s, we can use y[0:frame_len*frame_num]
             frame_num = int(np.floor(len_y / frame_len))

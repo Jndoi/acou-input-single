@@ -9,7 +9,7 @@
 from utils.audio_utils import AudioUtils
 from transceiver.transmitter import Transmitter
 from constants.constants import *
-from utils.common_utils import is_static
+from utils.common_utils import segmentation
 from utils.plot_utils import show_signals, show_d_cir, show_fft, show_phase
 import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter
@@ -250,6 +250,7 @@ class Receiver(object):
         # 3. align signals
         send_signal = AudioUtils.band_pass(Transmitter.get_passband_sequence(signal_type))
         start_index = AudioUtils.align_signal(filtered_data, send_signal, 0.1)  # get the arrived time on direct path
+        # print(start_index)
         # start_index = 0
         if start_index >= start_index_shift:  # remove the path length from speaker to bottom mic
             start_index = start_index - start_index_shift
@@ -308,9 +309,9 @@ class Receiver(object):
 
     @classmethod
     def split_abs_d_cir(cls, abs_d_cir, window_size=WINDOW_SIZE, step=STEP):
-        abs_d_cir_ = abs_d_cir.reshape((2, -1), order="F")
-        abs_d_cir_ = np.max(abs_d_cir_, axis=0)
-        abs_d_cir = abs_d_cir_.reshape((abs_d_cir.shape[0] // 2, -1), order="F")
+        # abs_d_cir_ = abs_d_cir.reshape((2, -1), order="F")
+        # abs_d_cir_ = np.mean(abs_d_cir_, axis=0)
+        # abs_d_cir = abs_d_cir_.reshape((abs_d_cir.shape[0] // 2, -1), order="F")
         abs_d_cir_h = abs_d_cir.shape[0]
         abs_d_cir = cls.padding_signals(abs_d_cir, DataType.AbsDCir, window_size, step)
         seq_len = int(np.floor((abs_d_cir.shape[1] - window_size) / step)) + 1
@@ -354,16 +355,21 @@ class Receiver(object):
                                            device_type=device_type)
         data = cls.cal_d_cir(cls.demodulation(data), cls.gen_training_matrix())
         data = cls.smooth_data(np.real(data)) + 1j * cls.smooth_data(np.imag(data))
+        # down sampling
+        data = data.reshape((2, -1), order="F")
+        data = np.max(data, axis=0)
+        data = data.reshape((60, -1), order="F")
         data_abs = np.abs(data)
-        # is_static(data_abs, 6)
         # show_d_cir(data_abs)
-        if augmentation_radio:
-            data_abs = augmentation_speed(data_abs, speed_radio=augmentation_radio)
-        abs_d_cir = cls.split_abs_d_cir(data_abs)
-        if gen_img:
-            cls.gen_d_cir_img(abs_d_cir, base_path=img_save_path,
-                              file_name=filename.split('.')[0] + '.png', is_frames=True)
-        return abs_d_cir
+        segmentation_index = segmentation(data_abs)
+        for index in segmentation_index:
+            curr_data_abs = data_abs[:, index[0]:index[1]]
+            if augmentation_radio:
+                curr_data_abs = augmentation_speed(curr_data_abs, speed_radio=augmentation_radio)
+            curr_data_abs = cls.split_abs_d_cir(curr_data_abs)
+            return curr_data_abs
+            # show_d_cir(curr_data_abs, is_frames=True)
+            # return curr_data_abs
 
     @classmethod
     def receive_with_real_phase(cls, base_path, filename, gen_img=False, img_save_path=None,
@@ -397,18 +403,32 @@ def gen_cir(base_path, label_arr):
 
 
 if __name__ == '__main__':
-    pass
-    # 如果连续三个10区间和都小于某个值则表示需要切分
-    # 要求间距最小为30，即10
-    # print(abs_d_cir.shape)
-    # show_d_cir(abs_d_cir, True)
-    # show_signals(cls.smooth_data(np.std(data_abs, axis=0)))
-    # a_1656738551359.wav
-    split_abs_d_cir = Receiver.receive(
+    # letter_dict = {}
+    # for root, dirs, files in os.walk(r"D:\AcouInputDataSet\single"):
+    #     for file in files:
+    #         if os.path.splitext(file)[1] == '.wav':
+    #             label = file.split("_")[0]
+    #             label_int = ord(label[0]) - ord('a')
+    #
+    #             res = (Receiver.receive(
+    #                 root, file, gen_img=False,
+    #                 start_index_shift=START_INDEX_SHIFT))
+    #             if len(res) != 1:
+    #                 print(file)
+    #                 os.remove(os.path.join(r"D:\AcouInputDataSet\single", file))
+    #                 if label[0] not in letter_dict:
+    #                     letter_dict[label[0]] = 1
+    #                 else:
+    #                     letter_dict[label[0]] = letter_dict[label[0]] + 1
+    # print(letter_dict)
+    Receiver.receive(
         base_path=r'D:\Program\Tencent\QQ-Chat-Record\563496927\FileRecv\MobileFile',
-        filename='1662871121158.wav')
-    show_d_cir(split_abs_d_cir, is_frames=True)
-    # show_signals(split_real_phase.T*0.025)  # order='C' 先行再列 order='F' 先列再行
-    # print(abs_d_cir.shape)
-    # for c in abs_d_cir:
-    #     show_d_cir(c.squeeze(), False)
+        # base_path=r"D:\AcouInputDataSet\single",
+        # filename='word_1667032424016.wav',
+        # filename='a_1667381131966.wav',
+        # filename='c_1667467281016.wav',
+        # filename='1666953370428.wav',
+        # filename='a word_1667271777179.wav',
+        filename='a word_1667371289681.wav',
+        start_index_shift=START_INDEX_SHIFT,
+        )  # (30, 1, 60, 40)

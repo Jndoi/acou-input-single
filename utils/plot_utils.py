@@ -28,6 +28,7 @@ def show_signals(signals, is_frames=False):
     :param signals:
     :return:
     """
+    plt.figure(figsize=(10, 6), dpi=200)
     if is_frames:
         frame = signals[0]
         for index in np.arange(1, signals.shape[0]):
@@ -36,7 +37,22 @@ def show_signals(signals, is_frames=False):
         frame = signals
     # frame = frame.squeeze()
     plt.plot(frame, linewidth=0.5)
+    plt.margins(0, 0.1)
     # plt.plot(np.ones(frame.shape)*3, linewidth=0.5)
+    plt.show()
+
+
+def show_segmentation(frames, thr):
+    plt.figure(figsize=(10, 6), dpi=200)
+    # plt.gca().set (gca, 'LooseInset', get(gca, 'TightInset'))
+    plt.plot(np.arange(0, frames.shape[0])/100.0, frames, linewidth=1)
+    plt.plot(np.arange(0, frames.shape[0])/100.0, thr, linewidth=1, )
+    plt.rcParams['font.family'] = 'Times New Roman'
+    plt.rcParams['font.size'] = 18
+    plt.rcParams['axes.linewidth'] = 2
+    plt.xlabel("Time (sec)")
+    plt.ylabel("log-STE (dB)")
+    plt.margins(0, 0.1)
     plt.show()
 
 

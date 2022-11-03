@@ -174,16 +174,14 @@ def get_data_loader(loader_type=DatasetLoadType.ALL,
 
 if __name__ == '__main__':
     train_data_loader, test_data_loader = \
-        get_data_loader(data_path=r"../data/dataset_single_smooth.pkl",
+        get_data_loader(data_path=r"../data/dataset_single_smooth_20_40_.pkl",
                         loader_type=DatasetLoadType.TrainAndTest,
                         batch_size=8)
-    for index, (train_d_cir_x, train_phase_x, train_y) in enumerate(train_data_loader):
+    for index, (train_d_cir_x, train_y) in enumerate(train_data_loader):
         print(train_d_cir_x.shape)
-        print(train_phase_x.shape)
-        for item in train_d_cir_x:
-            show_d_cir(item, is_frames=True)
-        for item in train_phase_x:
-            show_signals(item.reshape(-1))
-        print(train_y.shape)
+        item = train_d_cir_x[0]  # 120, 40
+        print(item.shape)
+        item = item.reshape(7, 1, 3, 40, 40)[:,:,0, :,:].squeeze(2)  #
+        show_d_cir(item[0], is_frames=True)
         # train_x = train_x.reshape(5, -1, 61, 40)
         break

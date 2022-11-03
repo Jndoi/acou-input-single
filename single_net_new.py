@@ -4,13 +4,10 @@
 @Date ： 2022/7/15 20:18
 @Author ： Qiuyang Zeng
 @Software ：PyCharm
-
+https://github.com/zhulf0804/Inceptionv4_and_Inception-ResNetv2.PyTorch/blob/master/model/inceptionv4.py
 """
 from torch import nn
 import torch
-from blocks.se_block import SEBlock
-from blocks.ca_block import CABlock
-from blocks.tcn import TemporalConvNet
 from transceiver.receiver import Receiver
 from utils.dataset_utils import get_data_loader
 from constants.constants import DatasetLoadType, WINDOW_SIZE, TAP_SIZE, START_INDEX_SHIFT, LabelVocabulary
@@ -20,7 +17,7 @@ from blocks.res_block import ResBasicBlock
 import datetime
 
 
-BATCH_SIZE = 8
+BATCH_SIZE = 32
 EPOCH = 15
 LR = 1e-3
 
@@ -39,50 +36,79 @@ class Conv2d(nn.Module):
         return self.nonlinear(x)
 
 
-class Inception_A(nn.Module):  # 15 * 10 * 32 -> 15 * 10 * 32
+class Stem(nn.Module):
+    def __init__(self, in_channels, out_channels):  # out_channels
+        super(Stem, self).__init__()
+        # 5x5 conv s2 pooling=2
+        self.conv2d_1a = nn.Sequential(
+            Conv2d(in_channels, out_channels, kernel_size=(5, 5), stride=(2, 2), padding=(2, 2)),
+            Conv2d(out_channels, out_channels * 2, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+        )
+        # branch0: 1x1 conv s1 + 3x3 max_pool s2
+        # branch1: 3x3 conv s2
+        self.pool_2a = nn.Sequential(
+            nn.MaxPool2d(kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+        )
+        # self.mixed_2a_branch_0 = nn.Sequential(
+        #     Conv2d(out_channels, out_channels // 2, kernel_size=(1, 1), stride=(1, 1), padding=(0, 0)),
+        #     nn.MaxPool2d(kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+        # )
+        # self.mixed_2a_branch_1 = Conv2d(out_channels, out_channels // 2,
+        #                                 kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+
+    def forward(self, x):
+        x = self.conv2d_1a(x)
+        x = self.pool_2a(x)
+        # x0 = self.mixed_2a_branch_0(x)  # 1x1 conv s1 -> max_pool
+        # x1 = self.mixed_2a_branch_1(x)  # 3x3 conv s2
+        # x = torch.cat((x0, x1), dim=1)  # batch_size, channels, width, height
+        return x
+
+
+class Inception_A(nn.Module):  # 15 * 10 * 64 -> 15 * 10 * 64
 
     def __init__(self, in_channels):
         super(Inception_A, self).__init__()
-        self.branch1 = nn.Sequential(
-            Conv2d(in_channels, 8, kernel_size=(1, 1), stride=(1, 1), padding=(0, 0))
+        self.branch_0 = nn.Sequential(
+            nn.AvgPool2d(kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            Conv2d(in_channels, 32, kernel_size=(1, 1), stride=(1, 1), padding=(0, 0))
         )
-        self.branch5 = nn.Sequential(
+        self.branch_1 = nn.Sequential(
+            Conv2d(in_channels, 32, kernel_size=(1, 1), stride=(1, 1), padding=(0, 0))
+        )
+        self.branch_2 = nn.Sequential(
             Conv2d(in_channels, 16, kernel_size=(1, 1), stride=(1, 1), padding=(0, 0)),
-            Conv2d(16, 8, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2))
+            Conv2d(16, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
         )
-        self.branch3 = nn.Sequential(
+        self.branch_3 = nn.Sequential(
             Conv2d(in_channels, 16, kernel_size=(1, 1), stride=(1, 1), padding=(0, 0)),
             Conv2d(16, 16, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
-            Conv2d(16, 8, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-        )
-        self.branch_pool = nn.Sequential(
-            nn.AvgPool2d(kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
-            Conv2d(in_channels, 8, kernel_size=(1, 1), stride=(1, 1), padding=(0, 0))
+            Conv2d(16, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
         )
 
     def forward(self, x):
-        # 1x1
-        branch1 = self.branch1(x)
-        # 1x1 -> 5x5
-        branch5 = self.branch5(x)
-        # 1x1 -> 3x3 -> 3x3
-        branch3 = self.branch3(x)
         # avg pool -> 1x1
-        branch_pool = self.branch_pool(x)
-        return torch.cat((branch1, branch5, branch3, branch_pool), dim=1)
+        x0 = self.branch_0(x)
+        # 1x1
+        x1 = self.branch_1(x)
+        # 1x1 -> 5x5
+        x2 = self.branch_2(x)
+        # 1x1 -> 3x3 -> 3x3
+        x3 = self.branch_3(x)
+        return torch.cat((x0, x1, x2, x3), dim=1)
 
 
-class Reduction_A(nn.Module):  # 15 * 10 * 32 -> 8 * 6 * 64
+class Reduction_A(nn.Module):  # 15 * 10 * 64 -> 8 * 6 * 128
     # 35 -> 17
-    def __init__(self, in_channels, k=16, l=32, m=32, n=32):
+    def __init__(self, in_channels, k=16, l=64, m=64, n=64):
         super(Reduction_A, self).__init__()
-        self.branch_0 = Conv2d(in_channels, n, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
-        self.branch_1 = nn.Sequential(
+        self.branch_0 = nn.MaxPool2d(kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+        self.branch_1 = Conv2d(in_channels, n, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+        self.branch_2 = nn.Sequential(
             Conv2d(in_channels, k, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
             Conv2d(k, l, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
             Conv2d(l, m, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1)),
         )
-        self.branch_2 = nn.MaxPool2d(kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
 
     def forward(self, x):
         x0 = self.branch_0(x)
@@ -99,19 +125,16 @@ class Net(nn.Module):
         self.gru_input_size = gru_input_size
         self.num_classes = num_classes
         self.conv = nn.Sequential(
-            nn.Sequential(
-                Conv2d(1, in_channels, kernel_size=(5, 5), stride=(2, 2), padding=(2, 2)),
-                nn.MaxPool2d(kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
-            ),
-            Inception_A(in_channels),
-            Reduction_A(32, ),
+            Stem(1, self.in_channels),  # 60 * 40 * 1 -> 15 * 10 * in_channels(64)
+            Inception_A(self.in_channels * 2),  # 15 * 10 * in_channels -> 15 * 10 * in_channels(64)
+            Reduction_A(self.in_channels * 2),  # 15 * 10 * in_channels -> 7 * 5 * in_channels(128)
             nn.AdaptiveAvgPool2d(1),
-            nn.Flatten()
+            nn.Flatten(),
         )
-        self.gru = nn.GRU(self.gru_input_size, self.gru_hidden_size, num_layers=1)
+        self.gru = nn.GRU(self.gru_input_size, self.gru_hidden_size, num_layers=2)
         self.cls = nn.Sequential(
-            nn.Dropout(0.1),
-            nn.Linear(self.gru_hidden_size, self.num_classes),
+            nn.Dropout(0.2),
+            nn.Linear(self.gru_hidden_size * 2, self.num_classes),
             nn.LogSoftmax(dim=-1)
         )
 
@@ -128,6 +151,7 @@ class Net(nn.Module):
         h_n = h_n.reshape(h_n.shape[0], -1)
         output = self.cls(h_n.squeeze(0))  # shape of x: (batch_size, num_classes)
         return output
+
 
 def evaluate(data_loader, net, type, total):
     correct = 0
@@ -149,7 +173,7 @@ def print_model_parm_nums(model):
 
 
 def train():
-    net = Net(in_channels=32, gru_input_size=96, gru_hidden_size=64, num_classes=26).cuda()
+    net = Net(in_channels=64, gru_input_size=256, gru_hidden_size=128, num_classes=26).cuda()
     print_model_parm_nums(net)
     data_path = [r"data/dataset_single_smooth_20_40.pkl"]
     loss_func = nn.CrossEntropyLoss()
@@ -195,7 +219,7 @@ def train():
 
 
 def predict(base_path, filename):
-    net = Net(in_channels=32, gru_input_size=96, gru_hidden_size=64, num_classes=26).cuda()
+    net = Net(in_channels=64, gru_input_size=128, gru_hidden_size=64, num_classes=26).cuda()
     state_dict = torch.load('model/single_net_params_data_augmentation.pth')  # 2028 569
     # state_dict = torch.load('single_net_params.pth')  # 2028 569
     net.load_state_dict(state_dict)
@@ -234,5 +258,9 @@ def predict(base_path, filename):
         print("acc:{}".format(correct/total))
         print(res)
 
+
 if __name__ == '__main__':
     train()
+    # import os
+    # files = os.listdir(r"D:\AcouInputDataSet\single_test")
+    # predict(r"D:\AcouInputDataSet\single_test", files)

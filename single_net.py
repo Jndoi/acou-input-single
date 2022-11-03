@@ -49,7 +49,7 @@ class Net(nn.Module):
         self.conv = nn.Sequential(
             nn.Sequential(
                 Conv2dWithBN(1, in_channels, kernel_size=(5, 5), stride=(2, 2), padding=(2, 2)),
-                nn.Dropout(0.1)
+                nn.MaxPool2d(kernel_size=(3, 3), stride=(2, 2), ceil_mode=True)
             ),
             self.make_conv_layers(layers),
             nn.AdaptiveAvgPool2d(1),
@@ -57,6 +57,7 @@ class Net(nn.Module):
         )
         self.gru = nn.GRU(self.gru_input_size, self.gru_hidden_size, num_layers=1)
         self.cls = nn.Sequential(
+            nn.Dropout(0.1),
             nn.Linear(self.gru_hidden_size, self.num_classes),
             nn.LogSoftmax(dim=-1)
         )
@@ -123,8 +124,8 @@ def train():
     # ["RES_32", "M", "RES_32",  "M", "RES_64", "M", "RES_64"]
     # 0.838462
     # [16, "M", 32,  "M", 48, "M", 64]
-    args = ["RES_16", "M", "RES_32", "M", "RES_32", "M", "RES_64"]
-    net = Net(layers=args, in_channels=32, gru_input_size=64, gru_hidden_size=64, num_classes=26).cuda()
+    args = ["RES_32", "M", "RES_64", "M", "RES_64"]
+    net = Net(layers=args, in_channels=16, gru_input_size=64, gru_hidden_size=64, num_classes=26).cuda()
     print_model_parm_nums(net)
     data_path = [r"data/dataset_single_smooth_20_40.pkl", ]
     # r"data/dataset_single_smooth_20_40_10cm.pkl",

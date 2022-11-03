@@ -41,5 +41,5 @@ class ResBasicBlock(nn.Module):
         # 在单个数据集的情况下CABlock(0.96/0.88)比SEBlock(0.97/0.83)的效果更好
         # 不加CABlock或SEBlock，(0.96/0.88)
         # 不加dropout，(0.96/0.84)
-        out = F.relu(out)
+        out = F.relu6(out)
         return out
