@@ -40,8 +40,8 @@ def segmentation(data):
     is_higher_than_thr = log_ste_frame >= log_ste_thr
     # show_segmentation(log_ste_frame, log_ste_thr)
     # show_signals(is_higher_than_thr)
-    letter_frame_num = 40  # 字符的最小长度
-    letter_gap_frame_num = 35  # 字符间的间隔最小长度
+    letter_frame_num = 30  # 字符的最小长度
+    letter_gap_frame_num = 30  # 字符间的间隔最小长度
     word_gap_frame_num = 80  # 单词的间隔最小长度
     # 排除掉非常短的字符片段
     # 1. 找到第一个非0的值 -> 第一个字符的起点

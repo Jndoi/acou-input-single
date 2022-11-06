@@ -349,33 +349,56 @@ class Receiver(object):
         return d_cir.astype(np.uint8), phase.astype(np.int16)
 
     @classmethod
+    def down_sampling(cls, data):
+        data = data.reshape((2, -1), order="F")
+        data = np.max(data, axis=0)
+        data = data.reshape((60, -1), order="F")
+        return data
+
+    @classmethod
     def receive(cls, base_path, filename, gen_img=False, img_save_path=None,
                 start_index_shift=START_INDEX_SHIFT, augmentation_radio=None, device_type=DeviceType.HONOR30Pro):
         data = cls.get_signals_by_filename(base_path, filename, start_index_shift=start_index_shift,
                                            device_type=device_type)
         data = cls.cal_d_cir(cls.demodulation(data), cls.gen_training_matrix())
         data = cls.smooth_data(np.real(data)) + 1j * cls.smooth_data(np.imag(data))
-        # down sampling
-        data = data.reshape((2, -1), order="F")
-        data = np.max(data, axis=0)
-        data = data.reshape((60, -1), order="F")
+        data = cls.down_sampling(data)
         data_abs = np.abs(data)
         # show_d_cir(data_abs)
         segmentation_index = segmentation(data_abs)
+        letter_num = len(segmentation_index)
+        segmentation_data = []
+        for index in range(letter_num):
+            curr_data_abs = data_abs[:, segmentation_index[index][0]:segmentation_index[index][1]]
+            if augmentation_radio:
+                curr_data_abs = augmentation_speed(curr_data_abs, speed_radio=augmentation_radio)
+            curr_data_abs = cls.split_abs_d_cir(curr_data_abs)
+            segmentation_data.append(curr_data_abs)
+        return segmentation_data
+
+    @classmethod
+    def receive_real_time(cls, base_path, filename, start_index_shift=START_INDEX_SHIFT, augmentation_radio=None):
+        data = cls.get_signals_by_filename(base_path, filename, start_index_shift=start_index_shift)
+        data = cls.cal_d_cir(cls.demodulation(data), cls.gen_training_matrix())
+        data = cls.smooth_data(np.real(data)) + 1j * cls.smooth_data(np.imag(data))
+        data = cls.down_sampling(data)
+        data_abs = np.abs(data)
+        # show_d_cir(data_abs)
+        # 对信号进行分段[[begin1, end1], [begin2, end2], ..., ]
+        segmentation_index = segmentation(data_abs)
+        segmentation_data = []
         for index in segmentation_index:
             curr_data_abs = data_abs[:, index[0]:index[1]]
             if augmentation_radio:
                 curr_data_abs = augmentation_speed(curr_data_abs, speed_radio=augmentation_radio)
             curr_data_abs = cls.split_abs_d_cir(curr_data_abs)
-            return curr_data_abs
-        print(filename)
-        os.remove(os.path.join(base_path, filename))
-        # if augmentation_radio:
-        #     data_abs = augmentation_speed(data_abs, speed_radio=augmentation_radio)
-        # curr_data_abs = cls.split_abs_d_cir(data_abs)
-        # return curr_data_abs
-        # show_d_cir(curr_data_abs, is_frames=True)
-        # return curr_data_abs
+            segmentation_data.append(curr_data_abs)
+        if len(segmentation_data) == 0:
+            if augmentation_radio:
+                data_abs = augmentation_speed(data_abs, speed_radio=augmentation_radio)
+            curr_data_abs = cls.split_abs_d_cir(data_abs)
+            segmentation_data.append(curr_data_abs)
+        return segmentation_data
 
     @classmethod
     def receive_with_real_phase(cls, base_path, filename, gen_img=False, img_save_path=None,
@@ -409,32 +432,38 @@ def gen_cir(base_path, label_arr):
 
 
 if __name__ == '__main__':
-    # letter_dict = {}
-    # for root, dirs, files in os.walk(r"D:\AcouInputDataSet\single"):
-    #     for file in files:
-    #         if os.path.splitext(file)[1] == '.wav':
-    #             label = file.split("_")[0]
-    #             label_int = ord(label[0]) - ord('a')
-    #
-    #             res = (Receiver.receive(
-    #                 root, file, gen_img=False,
-    #                 start_index_shift=START_INDEX_SHIFT))
-    #             if len(res) != 1:
-    #                 print(file)
-    #                 os.remove(os.path.join(r"D:\AcouInputDataSet\single", file))
-    #                 if label[0] not in letter_dict:
-    #                     letter_dict[label[0]] = 1
-    #                 else:
-    #                     letter_dict[label[0]] = letter_dict[label[0]] + 1
-    # print(letter_dict)
-    Receiver.receive(
-        base_path=r'D:\Program\Tencent\QQ-Chat-Record\563496927\FileRecv\MobileFile',
-        # base_path=r"D:\AcouInputDataSet\single",
-        # filename='word_1667032424016.wav',
-        # filename='a_1667381131966.wav',
-        # filename='c_1667467281016.wav',
-        # filename='1666953370428.wav',
-        # filename='a word_1667271777179.wav',
-        filename='a word_1667371289681.wav',
-        start_index_shift=START_INDEX_SHIFT,
-        )  # (30, 1, 60, 40)
+    letter_dict = {}
+    count = 0
+    for root, dirs, files in os.walk(r"D:\AcouInputDataSet\aaaa"):
+        for file in tqdm(files):
+            if os.path.splitext(file)[1] == '.wav':
+                label = file.split("_")[0]
+                val = (Receiver.receive(
+                    root, file, gen_img=False,
+                    start_index_shift=START_INDEX_SHIFT+28))
+                if val == 1:
+                    if label not in letter_dict:
+                        letter_dict[label] = 0
+                    letter_dict[label] = letter_dict[label]+1
+                    count += val
+                # if len(res) != 1:
+                #     print(file)
+                #     os.remove(os.path.join(r"D:\AcouInputDataSet\single", file))
+                #     if label[0] not in letter_dict:
+                #         letter_dict[label[0]] = 1
+                #     else:
+                #         letter_dict[label[0]] = letter_dict[label[0]] + 1
+    print(count)
+    print(letter_dict)
+    # segmentation_data = Receiver.receive_real_time(
+    #     # base_path=r'D:\Program\Tencent\QQ-Chat-Record\563496927\FileRecv\MobileFile',
+    #     base_path=r"D:\AcouInputDataSet\dataset",
+    #     filename='lo_1667642404722.wav',
+    #     # filename='a_1667381131966.wav',
+    #     # filename='c_1667467281016.wav',
+    #     # filename='1666953370428.wav',
+    #     # filename='a word_1667371289681.wav',
+    #     start_index_shift=START_INDEX_SHIFT,
+    #     )  # (30, 1, 60, 40)
+    # for data in segmentation_data:
+    #     show_d_cir(data, is_frames=True)
