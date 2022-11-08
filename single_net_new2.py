@@ -18,6 +18,7 @@ from utils.wav2pickle_utils import DataItem
 from utils.plot_utils import show_d_cir
 from blocks.res_block import ResBasicBlock
 import datetime
+from tqdm import tqdm
 
 
 BATCH_SIZE = 8
@@ -129,16 +130,16 @@ def train():
     net = Net(layers=args, in_channels=16, gru_input_size=128, gru_hidden_size=64, num_classes=26).cuda()
     print_model_parm_nums(net)
     data_path = [
-                    # r"data/dataset_single_smooth_20_40.pkl",
                     r"data/dataset.pkl",
                     r"data/dataset_10cm.pkl",
                     r"data/dataset_20cm.pkl",
                     r"data/dataset_five_fourth.pkl",
                     r"data/dataset_four_fifth.pkl",
-                    # r"data/dataset_single_smooth_20_40_10cm.pkl",
-                    # r"data/dataset_single_smooth_20_40_20cm.pkl",
-                    # r"data/dataset_single_smooth_20_40_five_fourth.pkl",
-                    # r"data/dataset_single_smooth_20_40_four_fifth.pkl"
+                    r"data/dataset_single.pkl",
+                    r"data/dataset_10cm_single.pkl",
+                    r"data/dataset_20cm_single.pkl",
+                    r"data/dataset_five_fourth_single.pkl",
+                    r"data/dataset_four_fifth_single.pkl",
                 ]
     # r"data/dataset_single_smooth_20_40_10cm_five_fourth.pkl",
     # r"data/dataset_single_smooth_20_40_20cm_five_fourth.pkl",
@@ -189,7 +190,7 @@ def train():
 def predict(base_path, filename):
     args = [32, "M", 64, "M", 128]
     net = Net(layers=args, in_channels=16, gru_input_size=128, gru_hidden_size=64, num_classes=26).cuda()
-    state_dict = torch.load('model/params_15epochs.pth')  # 2028 569
+    state_dict = torch.load('model/params_15epochs(16).pth')  # 2028 569
     # state_dict = torch.load('single_net_params.pth')  # 2028 569
     net.load_state_dict(state_dict)
     if net is None or base_path is None or filename is None:
@@ -231,13 +232,14 @@ def predict(base_path, filename):
 def predict_real_time(base_path):
     args = [32, "M", 64, "M", 128]
     net = Net(layers=args, in_channels=16, gru_input_size=128, gru_hidden_size=64, num_classes=26).cuda()
-    state_dict = torch.load('model/params_15epochs.pth')  # 2028 569
+    state_dict = torch.load('model/params_15epochs(16).pth')  # 2028 569
     net.load_state_dict(state_dict)
     net.eval()  # 禁用 dropout, 避免 BatchNormalization 重新计算均值和方差
     label_letter = ""
+    letter_dict = {}
     with torch.no_grad():
         for root, dirs, files in os.walk(base_path):
-            for filename in files:
+            for filename in tqdm(files):
                 output_letter = ""
                 split_d_cir = Receiver.receive_real_time(base_path, filename,
                                                          start_index_shift=START_INDEX_SHIFT,
@@ -249,12 +251,18 @@ def predict_real_time(base_path):
                     output = net(d_cir.cuda())
                     predicted = torch.argmax(output, 0)
                     output_letter = output_letter + chr(predicted.cpu().numpy()+ord('a'))
-                print(output_letter)
+                true_letter = filename.split("_")[0]
+                if true_letter not in letter_dict:
+                    letter_dict[true_letter] = 0
+                if output_letter == true_letter:
+                    letter_dict[true_letter] = letter_dict[true_letter] + 1
+                # print(output_letter)
+    print(letter_dict)
 
 
 if __name__ == '__main__':
-    # train()
-    import os
+    train()
+    # import os
     # files = os.listdir(r"D:\AcouInputDataSet\single_test")
     # predict(r"D:\AcouInputDataSet\single_test", files)
-    predict_real_time(r'D:\AcouInputDataSet\aaaa')
+    # predict_real_time(r'D:\AcouInputDataSet\dataset_single')
