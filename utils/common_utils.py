@@ -175,8 +175,78 @@ def decode_predictions(pred):
     return texts
 
 
+def min_distance(word_predict: str, word_label: str) -> int:
+    """
+    calculate the min edit distance word_predict -> word_label
+    For example:
+        input: word_predict: bog, word_label: bag
+        return: 1
+    :param word_predict: predict result of CNN-GRU-FC component
+    :param word_label: the true label of current word
+    :return: the min edit distance from word_predict to word_label
+    """
+    n = len(word_predict)
+    m = len(word_label)
+    if n * m == 0:
+        return n + m
+    dp = [[0] * (m + 1) for _ in range(n + 1)]
+    # 边界状态初始化
+    for i in range(n + 1):
+        dp[i][0] = i
+    for j in range(m + 1):
+        dp[0][j] = j
+    # 计算所有 dp 值
+    for i in range(1, n + 1):
+        for j in range(1, m + 1):
+            left = dp[i - 1][j] + 1  # insert new char
+            down = dp[i][j - 1] + 1  # delete current char
+            left_down = dp[i - 1][j - 1]  # replace current char
+            if word_predict[i - 1] != word_label[j - 1]:
+                left_down += 1
+            dp[i][j] = min(left, down, left_down)
+    return dp[n][m]
+
+
+def cal_cer(word_predict: str, word_label: str) -> float:
+    """
+    calculate character error rate: word_predict -> word_label
+    For example:
+        input: word_predict: bog, word_label: bag
+        return: min_edit_distance(bog->bag) / len(bag) = 0.3333333333333333
+    :param word_predict: predict result of CNN-GRU-FC component
+    :param word_label: the true label of current word
+    :return: character error rate
+    """
+    min_edit_distance = min_distance(word_predict, word_label)
+    word_label_len = len(word_label)
+    if word_label_len != 0:
+        return min_edit_distance / len(word_label)
+    else:
+        return 0  # prevent divide by zero
+
+
+def cal_cer_total(word_pred: list, word_label: list) -> float:
+    """
+    calculate the total character error rate (CER)
+    :param word_pred: list of pred words
+    :param word_label: list of labels
+    :return:
+    """
+    word_pred_num = len(word_pred)
+    word_label_num = len(word_label)
+    assert word_label_num == word_pred_num
+    cer_sum = 0.0
+    for i in range(word_label_num):
+        cer_sum += cal_cer(word_pred[i], word_label[i])
+    if word_label_num != 0:
+        return cer_sum / word_label_num
+    else:
+        return 0  # prevent divide by zero
+
+
 if __name__ == '__main__':
     # print(decode_predictions(torch.tensor([[0, 0, 2, 3, 3, 3]]).cuda()))
+    print(float(1/3))
     pass
 # 30: {'c': 38, 'e': 14, 'f': 9, 'g': 2, 'j': 1, 'k': 1, 'l': 24, 's': 24, 'u': 6}
 # 40: {'c': 76, 'e': 20, 'f': 4, 'g': 2, 'l': 51, 's': 38, 'u': 5, 'v': 6, 'y': 1}
