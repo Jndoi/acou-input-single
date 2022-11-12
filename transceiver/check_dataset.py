@@ -356,31 +356,6 @@ class Receiver(object):
         return data
 
     @classmethod
-    def receive(cls, base_path, filename, gen_img=False, img_save_path=None,
-                start_index_shift=START_INDEX_SHIFT, augmentation_radio=None, device_type=DeviceType.HONOR30Pro):
-        data = cls.get_signals_by_filename(base_path, filename, start_index_shift=start_index_shift,
-                                           device_type=device_type)
-        data = cls.cal_d_cir(cls.demodulation(data), cls.gen_training_matrix())
-        data = cls.smooth_data(np.real(data)) + 1j * cls.smooth_data(np.imag(data))
-        data = cls.down_sampling(data)
-        data_abs = np.abs(data)
-        # show_d_cir(data_abs)
-        segmentation_index = segmentation(data_abs)
-        letter_num = len(segmentation_index)
-        if letter_num != 1:
-            return 1
-        else:
-            return 0
-        # segmentation_data = []
-        # for index in range(letter_num):
-        #     curr_data_abs = data_abs[:, segmentation_index[index][0]:segmentation_index[index][1]]
-        #     if augmentation_radio:
-        #         curr_data_abs = augmentation_speed(curr_data_abs, speed_radio=augmentation_radio)
-        #     curr_data_abs = cls.split_abs_d_cir(curr_data_abs)
-        #     segmentation_data.append(curr_data_abs)
-        # return segmentation_data
-
-    @classmethod
     def receive_real_time(cls, base_path, filename, start_index_shift=START_INDEX_SHIFT, augmentation_radio=None):
         data = cls.get_signals_by_filename(base_path, filename, start_index_shift=start_index_shift)
         data = cls.cal_d_cir(cls.demodulation(data), cls.gen_training_matrix())
@@ -404,36 +379,6 @@ class Receiver(object):
             segmentation_data.append(curr_data_abs)
         return segmentation_data
 
-    @classmethod
-    def receive_with_real_phase(cls, base_path, filename, gen_img=False, img_save_path=None,
-                                start_index_shift=START_INDEX_SHIFT, augmentation_radio=None,
-                                device_type=DeviceType.HONOR30Pro):
-        data = cls.get_signals_by_filename(base_path, filename, start_index_shift=start_index_shift,
-                                           device_type=device_type)
-        data = cls.cal_d_cir(cls.demodulation(data), cls.gen_training_matrix())
-        data = cls.smooth_data(np.real(data)) + 1j * cls.smooth_data(np.imag(data))
-        abs_d_cir = np.abs(data)
-        real_phase = cls.cal_phase(data)
-        real_phase = cls.select_dynamic_tap_by_ste(real_phase, abs_d_cir, STEP // 2) * WaveLength * 25 / np.pi  # unit cm
-        real_phase = cls.smooth_data(real_phase)
-        if augmentation_radio:
-            abs_d_cir = augmentation_speed(abs_d_cir, speed_radio=augmentation_radio)
-            real_phase = augmentation_speed(real_phase, speed_radio=augmentation_radio)
-        split_abs_d_cir, split_real_phase = cls.split_abs_d_cir_phase(abs_d_cir, real_phase)
-        if gen_img:
-            cls.gen_d_cir_img(abs_d_cir, base_path=img_save_path,
-                              file_name=filename.split('.')[0] + '.png', is_frames=True)
-        return split_abs_d_cir, split_real_phase
-
-
-def gen_cir(base_path, label_arr):
-    for label in label_arr:
-        folder_path = os.path.join(base_path, label)
-        for root, dirs, files in os.walk(folder_path):
-            for file in tqdm(files, desc="generate cir of char '{}'".format(label)):
-                if os.path.splitext(file)[1] == '.wav':  # find all wav files
-                    Receiver.receive(folder_path, file, label)
-
 
 if __name__ == '__main__':
     letter_dict = {}
@@ -442,26 +387,15 @@ if __name__ == '__main__':
         for file in tqdm(files):
             if os.path.splitext(file)[1] == '.wav':
                 label = file.split("_")[0]
-                val = (Receiver.receive(
-                    root, file, gen_img=False,
-                    start_index_shift=START_INDEX_SHIFT))
-                if val == 1:
-                    os.remove(os.path.join(r"D:\AcouInputDataSet\s", file))
-                    if label not in letter_dict:
-                        letter_dict[label] = 0
-                    letter_dict[label] = letter_dict[label]+1
-                    count += val
-    print(count)
-    print(letter_dict)
-    # segmentation_data = Receiver.receive_real_time(
-    #     # base_path=r'D:\Program\Tencent\QQ-Chat-Record\563496927\FileRecv\MobileFile',
-    #     base_path=r"D:\AcouInputDataSet\word",
-    #     filename='would_1668064261252.wav',
-    #     # filename='a_1667381131966.wav',
-    #     # filename='c_1667467281016.wav',
-    #     # filename='1666953370428.wav',
-    #     # filename='a word_1667371289681.wav',
-    #     start_index_shift=START_INDEX_SHIFT,
-    #     )  # (30, 1, 60, 40)
-    # for data in segmentation_data:
-    #     show_d_cir(data, is_frames=True)
+                time = file.split("_")[1]
+                split_data = Receiver.receive_real_time(
+                    root, file,
+                    start_index_shift=START_INDEX_SHIFT)
+                i = 0
+                for data in split_data:
+                    Receiver.gen_d_cir_img\
+                        (data,
+                         base_path=r"D:\AcouInputDataSet\dataset_single_img",
+                         file_name="{}{}.jpg".format(label[i], time),
+                         is_frames=True)
+                    i = i+1

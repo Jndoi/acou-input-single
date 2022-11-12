@@ -8,10 +8,12 @@
 """
 from torch import nn
 import torch
+import os
 from blocks.se_block import SEBlock
 from blocks.ca_block import CABlock
 from blocks.tcn import TemporalConvNet
 from transceiver.receiver import Receiver
+from utils.common_utils import cal_cer_total
 from utils.dataset_utils import get_data_loader
 from constants.constants import DatasetLoadType, WINDOW_SIZE, TAP_SIZE, START_INDEX_SHIFT, LabelVocabulary
 from utils.wav2pickle_utils import DataItem
@@ -21,8 +23,8 @@ import datetime
 from tqdm import tqdm
 
 
-BATCH_SIZE = 8
-EPOCH = 15
+BATCH_SIZE = 16
+EPOCH = 25
 LR = 1e-3
 
 
@@ -50,8 +52,7 @@ class Net(nn.Module):
         self.conv = nn.Sequential(
             nn.Sequential(
                 Conv2dWithBN(1, in_channels, kernel_size=(5, 5), stride=(2, 2), padding=(2, 2)),
-                nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2))
-                # nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2), ceil_mode=True)
+                nn.Dropout(0.1)
             ),
             self.make_conv_layers(layers),
             nn.AdaptiveAvgPool2d(1),
@@ -59,7 +60,6 @@ class Net(nn.Module):
         )
         self.gru = nn.GRU(self.gru_input_size, self.gru_hidden_size, num_layers=2)
         self.cls = nn.Sequential(
-            # nn.Dropout(0.1),
             nn.Linear(self.gru_hidden_size * 2, self.num_classes),
             nn.LogSoftmax(dim=-1)
         )
@@ -83,9 +83,11 @@ class Net(nn.Module):
         in_channels = self.in_channels
         for arg in arch:
             if type(arg) == int:
-                layers += [Conv2dWithBN(in_channels=in_channels, out_channels=arg,
-                                        kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
-                            nn.Dropout(0.1)]
+                layers += [
+                            Conv2dWithBN(in_channels=in_channels, out_channels=arg,
+                                         kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+                            nn.Dropout(0.1),
+                          ]
                 in_channels = arg
             elif arg == "M":
                 layers += [nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2), ceil_mode=True)]
@@ -126,8 +128,8 @@ def train():
     # ["RES_32", "M", "RES_32",  "M", "RES_64", "M", "RES_128"]
     # 0.838462
     # [16, "M", 32,  "M", 48, "M", 64]
-    args = [32, "M", 64, "M", 128]
-    net = Net(layers=args, in_channels=16, gru_input_size=128, gru_hidden_size=64, num_classes=26).cuda()
+    args = ["M", 32, "M", 64, "M", 128]
+    net = Net(layers=args, in_channels=32, gru_input_size=128, gru_hidden_size=64, num_classes=26).cuda()
     print_model_parm_nums(net)
     data_path = [
                     r"data/dataset.pkl",
@@ -157,7 +159,7 @@ def train():
     test_size = len(test_loader.dataset)
     print("Train on {} samples, validate on {} samples, test on {} samples".format(train_size, valid_size, test_size))
     batch_num = train_size // BATCH_SIZE
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=batch_num * 10, gamma=0.33)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=batch_num * 5, gamma=0.75)
 
     for epoch in range(EPOCH):
         net.train()
@@ -188,9 +190,10 @@ def train():
 
 
 def predict(base_path, filename):
-    args = [32, "M", 64, "M", 128]
-    net = Net(layers=args, in_channels=16, gru_input_size=128, gru_hidden_size=64, num_classes=26).cuda()
-    state_dict = torch.load('model/params_15epochs(16).pth')  # 2028 569
+    args = ["M", 32, "M", 64, "M", 128]
+    net = Net(layers=args, in_channels=32, gru_input_size=128, gru_hidden_size=64, num_classes=26).cuda()
+    # state_dict = torch.load('model/params_15epochs(16).pth')  # 2028 569
+    state_dict = torch.load('model/params_25epochs.pth')  # 2028 569
     # state_dict = torch.load('single_net_params.pth')  # 2028 569
     net.load_state_dict(state_dict)
     if net is None or base_path is None or filename is None:
@@ -230,16 +233,21 @@ def predict(base_path, filename):
 
 
 def predict_real_time(base_path):
-    args = [32, "M", 64, "M", 128]
-    net = Net(layers=args, in_channels=16, gru_input_size=128, gru_hidden_size=64, num_classes=26).cuda()
-    state_dict = torch.load('model/params_15epochs(16).pth')  # 2028 569
+    args = ["M", 32, "M", 64, "M", 128]
+    net = Net(layers=args, in_channels=32, gru_input_size=128, gru_hidden_size=64, num_classes=26).cuda()
+    # state_dict = torch.load('model/params_15epochs(16).pth')  # 2028 569
+    state_dict = torch.load('model/params_15epochs.pth')  # 2028 569
     net.load_state_dict(state_dict)
     net.eval()  # 禁用 dropout, 避免 BatchNormalization 重新计算均值和方差
-    label_letter = ""
     letter_dict = {}
+    res = {}
+    count = 0
+    words_pre = []
+    words_label = []
     with torch.no_grad():
         for root, dirs, files in os.walk(base_path):
-            for filename in tqdm(files):
+            # for filename in tqdm(files):
+            for filename in files:
                 output_letter = ""
                 split_d_cir = Receiver.receive_real_time(base_path, filename,
                                                          start_index_shift=START_INDEX_SHIFT,
@@ -254,15 +262,29 @@ def predict_real_time(base_path):
                 true_letter = filename.split("_")[0]
                 if true_letter not in letter_dict:
                     letter_dict[true_letter] = 0
+                    res[true_letter] = []
+                res[true_letter].append(output_letter)
                 if output_letter == true_letter:
+                    count = count + 1
                     letter_dict[true_letter] = letter_dict[true_letter] + 1
-                # print(output_letter)
+                else:
+                    pass
+                    # print("------", filename)
+                    # os.remove(os.path.join(base_path, filename))
+                words_pre.append(output_letter)
+                words_label.append(true_letter)
+                print("{}: {}".format(true_letter, output_letter))
+    # for i in res.items():
+    #     print(i)
+    print(cal_cer_total(words_pre, words_label))
     print(letter_dict)
+    print(count)
 
 
 if __name__ == '__main__':
-    train()
+    # train()
     # import os
     # files = os.listdir(r"D:\AcouInputDataSet\single_test")
     # predict(r"D:\AcouInputDataSet\single_test", files)
-    # predict_real_time(r'D:\AcouInputDataSet\dataset_single')
+    predict_real_time(r'D:\AcouInputDataSet\c')
+    # predict_real_time(r'D:\AcouInputDataSet\dataset_single2')
