@@ -143,10 +143,6 @@ def train():
                     r"data/dataset_five_fourth_single.pkl",
                     r"data/dataset_four_fifth_single.pkl",
                 ]
-    # r"data/dataset_single_smooth_20_40_10cm_five_fourth.pkl",
-    # r"data/dataset_single_smooth_20_40_20cm_five_fourth.pkl",
-    # r"data/dataset_single_smooth_20_40_10cm_four_fifth.pkl",
-    # r"data/dataset_single_smooth_20_40_20cm_four_fifth.pkl"
     loss_func = nn.CrossEntropyLoss()
     optimizer = torch.optim.AdamW(net.parameters(), lr=LR, weight_decay=0.01)
     # state_dict = torch.load('single_net_params.pth')  # 2028 569
@@ -193,7 +189,7 @@ def predict(base_path, filename):
     args = ["M", 32, "M", 64, "M", 128]
     net = Net(layers=args, in_channels=32, gru_input_size=128, gru_hidden_size=64, num_classes=26).cuda()
     # state_dict = torch.load('model/params_15epochs(16).pth')  # 2028 569
-    state_dict = torch.load('model/params_25epochs.pth')  # 2028 569
+    state_dict = torch.load('model/params_10epochs.pth')  # 2028 569
     # state_dict = torch.load('single_net_params.pth')  # 2028 569
     net.load_state_dict(state_dict)
     if net is None or base_path is None or filename is None:
@@ -236,7 +232,7 @@ def predict_real_time(base_path):
     args = ["M", 32, "M", 64, "M", 128]
     net = Net(layers=args, in_channels=32, gru_input_size=128, gru_hidden_size=64, num_classes=26).cuda()
     # state_dict = torch.load('model/params_15epochs(16).pth')  # 2028 569
-    state_dict = torch.load('model/params_15epochs.pth')  # 2028 569
+    state_dict = torch.load('model/params_20epochs.pth')  # 2028 569
     net.load_state_dict(state_dict)
     net.eval()  # 禁用 dropout, 避免 BatchNormalization 重新计算均值和方差
     letter_dict = {}
@@ -282,9 +278,9 @@ def predict_real_time(base_path):
 
 
 if __name__ == '__main__':
-    # train()
+    train()
     # import os
     # files = os.listdir(r"D:\AcouInputDataSet\single_test")
     # predict(r"D:\AcouInputDataSet\single_test", files)
-    predict_real_time(r'D:\AcouInputDataSet\c')
+    # predict_real_time(r'D:\AcouInputDataSet\word')
     # predict_real_time(r'D:\AcouInputDataSet\dataset_single2')
