@@ -367,7 +367,7 @@ class Receiver(object):
         # show_d_cir(data_abs)
         segmentation_index = segmentation(data_abs)
         letter_num = len(segmentation_index)
-        if letter_num != 1:
+        if letter_num != 2:
             return 1
         else:
             return 0
@@ -391,6 +391,7 @@ class Receiver(object):
         # 对信号进行分段[[begin1, end1], [begin2, end2], ..., ]
         segmentation_index = segmentation(data_abs)
         segmentation_data = []
+        # print(segmentation_index)
         for index in segmentation_index:
             curr_data_abs = data_abs[:, index[0]:index[1]]
             if augmentation_radio:
@@ -438,30 +439,31 @@ def gen_cir(base_path, label_arr):
 if __name__ == '__main__':
     letter_dict = {}
     count = 0
-    for root, dirs, files in os.walk(r"D:\AcouInputDataSet\s"):
+    for root, dirs, files in os.walk(r"D:\AcouInputDataSet\dataset"):
         for file in tqdm(files):
             if os.path.splitext(file)[1] == '.wav':
                 label = file.split("_")[0]
                 val = (Receiver.receive(
                     root, file, gen_img=False,
-                    start_index_shift=START_INDEX_SHIFT))
+                    start_index_shift=START_INDEX_SHIFT+28))
                 if val == 1:
-                    os.remove(os.path.join(r"D:\AcouInputDataSet\s", file))
+                    # os.remove(os.path.join(r"D:\AcouInputDataSet\dataset", file))
                     if label not in letter_dict:
                         letter_dict[label] = 0
                     letter_dict[label] = letter_dict[label]+1
                     count += val
     print(count)
     print(letter_dict)
+
     # segmentation_data = Receiver.receive_real_time(
-    #     # base_path=r'D:\Program\Tencent\QQ-Chat-Record\563496927\FileRecv\MobileFile',
-    #     base_path=r"D:\AcouInputDataSet\word",
-    #     filename='would_1668064261252.wav',
-    #     # filename='a_1667381131966.wav',
-    #     # filename='c_1667467281016.wav',
-    #     # filename='1666953370428.wav',
-    #     # filename='a word_1667371289681.wav',
-    #     start_index_shift=START_INDEX_SHIFT,
+    #         # base_path=r'D:\Program\Tencent\QQ-Chat-Record\563496927\FileRecv\MobileFile',
+    #         base_path=r"D:\AcouInputDataSet\tmp",
+    #         # filename='a word_1668253773287.wav',
+    #         # filename='a_1667381131966.wav',
+    #         # filename='c_1668252129068.wav',
+    #         filename='cc_1668270817678.wav',
+    #         # filename='a word_1667371289681.wav',  #
+    #         start_index_shift=START_INDEX_SHIFT,
     #     )  # (30, 1, 60, 40)
     # for data in segmentation_data:
     #     show_d_cir(data, is_frames=True)
