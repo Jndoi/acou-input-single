@@ -25,7 +25,8 @@ def segmentation(data):
     tap_size = shape[0]
     frame_num = shape[1]
     window_num = frame_num // STEP
-    alpha = 0.4
+    # show_d_cir(data)
+    alpha = 0.3
     log_ste_frame = 10 * np.log(np.sum(np.square(data), axis=0))  # the log-STE of each frame
     # print(log_ste_frame.shape)
     log_ste_window = np.reshape(log_ste_frame[:window_num*STEP], (window_num, STEP))
