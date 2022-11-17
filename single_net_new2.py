@@ -52,13 +52,13 @@ class Net(nn.Module):
         self.conv = nn.Sequential(
             nn.Sequential(
                 Conv2dWithBN(1, in_channels, kernel_size=(5, 5), stride=(2, 2), padding=(2, 2)),
-                nn.Dropout(0.1)
+                # nn.Dropout(0.1)
             ),
             self.make_conv_layers(layers),
             nn.AdaptiveAvgPool2d(1),
             nn.Flatten()
         )
-        self.gru = nn.GRU(self.gru_input_size, self.gru_hidden_size, num_layers=2)
+        self.gru = nn.GRU(self.gru_input_size, self.gru_hidden_size, num_layers=2, dropout=0.1)
         self.cls = nn.Sequential(
             nn.Linear(self.gru_hidden_size * 2, self.num_classes),
             nn.LogSoftmax(dim=-1)
@@ -128,7 +128,7 @@ def train():
     # ["RES_32", "M", "RES_32",  "M", "RES_64", "M", "RES_128"]
     # 0.838462
     # [16, "M", 32,  "M", 48, "M", 64]
-    args = ["M", 32, "M", 64, "M", 128]
+    args = ["M", 64, "M", 128, "M", 128]
     net = Net(layers=args, in_channels=32, gru_input_size=128, gru_hidden_size=64, num_classes=26).cuda()
     print_model_parm_nums(net)
     data_path = [
@@ -186,7 +186,7 @@ def train():
 
 
 def predict(base_path, filename):
-    args = ["M", 32, "M", 64, "M", 128]
+    args = ["M", 64, "M", 128, "M", 128]
     net = Net(layers=args, in_channels=32, gru_input_size=128, gru_hidden_size=64, num_classes=26).cuda()
     # state_dict = torch.load('model/params_15epochs(16).pth')  # 2028 569
     state_dict = torch.load('model/params_10epochs.pth')  # 2028 569
@@ -229,10 +229,10 @@ def predict(base_path, filename):
 
 
 def predict_real_time(base_path):
-    args = ["M", 32, "M", 64, "M", 128]
+    args = ["M", 64, "M", 128, "M", 128]
     net = Net(layers=args, in_channels=32, gru_input_size=128, gru_hidden_size=64, num_classes=26).cuda()
     # state_dict = torch.load('model/params_15epochs(16).pth')  # 2028 569
-    state_dict = torch.load('model/params_20epochs.pth')  # 2028 569
+    state_dict = torch.load('model/params_25epochs.pth')  # 2028 569
     net.load_state_dict(state_dict)
     net.eval()  # 禁用 dropout, 避免 BatchNormalization 重新计算均值和方差
     letter_dict = {}
@@ -278,9 +278,9 @@ def predict_real_time(base_path):
 
 
 if __name__ == '__main__':
-    train()
+    # train()
     # import os
     # files = os.listdir(r"D:\AcouInputDataSet\single_test")
     # predict(r"D:\AcouInputDataSet\single_test", files)
-    # predict_real_time(r'D:\AcouInputDataSet\word')
+    predict_real_time(r'D:\AcouInputDataSet\word')
     # predict_real_time(r'D:\AcouInputDataSet\dataset_single2')
