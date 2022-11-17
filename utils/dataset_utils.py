@@ -26,22 +26,17 @@ TEST_RATE = 0.1
 def get_data_from_pickles_per_letter(data_path=None, data_type=DEFAULT_CONFIG.get("DataType")):
     data_d_cir = []
     data_label = []
-    count = {}
-    for i in range(26):
-        count[i] = 0
     for data_path_item in data_path:
         load_data = load_data_from_pickle(data_path_item)
         for data_item in load_data:
             data_d_cir.append(data_item.split_abs_d_cir)
             data_label.append(data_item.label)
-            count[data_item.label] = count[data_item.label] + 1
     train_x, valid_test_x, train_y, valid_test_y = train_test_split(
         data_d_cir, data_label, test_size=VAL_RATE+TEST_RATE, random_state=0,
         stratify=data_label)
     valid_x, test_x, valid_y, test_y = train_test_split(
         valid_test_x, valid_test_y, test_size=TEST_RATE/(VAL_RATE+TEST_RATE), random_state=0,
         stratify=valid_test_y)
-    print(count)
     return train_x, train_y, valid_x, valid_y, test_x, test_y
 
 
