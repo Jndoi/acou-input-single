@@ -149,7 +149,7 @@ def train():
     optimizer = torch.optim.AdamW(net.parameters(), lr=LR, weight_decay=0.01)
     # state_dict = torch.load('single_net_params.pth')  # 2028 569
     # net.load_state_dict(state_dict)
-    train_loader, valid_loader, test_loader = get_data_loader(loader_type=DatasetLoadType.TrainValidAndTest,
+    train_loader, valid_loader, test_loader = get_data_loader(loader_type=DatasetLoadType.UniformTrainValidAndTest,
                                                               batch_size=BATCH_SIZE,
                                                               data_path=data_path)
     train_size = len(train_loader.dataset)
@@ -327,8 +327,8 @@ def get_confusion_matrix():
 
 
 if __name__ == '__main__':
-    get_confusion_matrix()
-    # train()
+    # get_confusion_matrix()
+    train()
     # import os
     # files = os.listdir(r"D:\AcouInputDataSet\single_test")
     # predict(r"D:\AcouInputDataSet\single_test", files)
