@@ -20,7 +20,9 @@ from utils.wav2pickle_utils import DataItem
 from utils.plot_utils import show_d_cir
 from blocks.res_block import ResBasicBlock
 import datetime
+from sklearn.metrics import confusion_matrix
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 
 BATCH_SIZE = 16
@@ -277,10 +279,58 @@ def predict_real_time(base_path):
     print(count)
 
 
+def get_confusion_matrix():
+    args = ["M", 64, "M", 128, "M", 128]
+    net = Net(layers=args, in_channels=32, gru_input_size=128, gru_hidden_size=64, num_classes=26).cuda()
+    state_dict = torch.load('model/params_25epochs.pth')
+    net.load_state_dict(state_dict)
+    net.eval()
+    data_path = [
+        r"data/dataset.pkl",
+        r"data/dataset_10cm.pkl",
+        r"data/dataset_20cm.pkl",
+        r"data/dataset_five_fourth.pkl",
+        r"data/dataset_four_fifth.pkl",
+        r"data/dataset_single.pkl",
+        r"data/dataset_10cm_single.pkl",
+        r"data/dataset_20cm_single.pkl",
+        r"data/dataset_five_fourth_single.pkl",
+        r"data/dataset_four_fifth_single.pkl",
+    ]
+    _, _, test_loader = get_data_loader(loader_type=DatasetLoadType.UniformTrainValidAndTest,
+                                        batch_size=BATCH_SIZE,
+                                        data_path=data_path)
+    y_pred = []
+    y_true = []
+    num = 0
+    with torch.no_grad():
+        for step, (d_cir_x_batch, y_batch) in enumerate(test_loader):
+            d_cir_x_batch = d_cir_x_batch.float() / 255
+            d_cir_x_batch = d_cir_x_batch.cuda()
+            y_batch = y_batch.cuda().long()
+            output = net(d_cir_x_batch)
+            pred = torch.argmax(output, 1)
+            y_batch = y_batch.cpu().numpy().tolist()
+            pred = pred.cpu().numpy().tolist()
+            num += len(pred)
+            y_true.extend(y_batch)
+            y_pred.extend(pred)
+    C = confusion_matrix(y_true, y_pred, labels=range(26))
+    plt.matshow(C, cmap=plt.cm.Reds)
+    print(num)
+    for i in range(len(C)):
+        for j in range(len(C)):
+            plt.annotate(C[j, i], xy=(i, j), horizontalalignment='center', verticalalignment='center')
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+    plt.show()
+
+
 if __name__ == '__main__':
+    get_confusion_matrix()
     # train()
     # import os
     # files = os.listdir(r"D:\AcouInputDataSet\single_test")
     # predict(r"D:\AcouInputDataSet\single_test", files)
-    predict_real_time(r'D:\AcouInputDataSet\word')
+    # predict_real_time(r'D:\AcouInputDataSet\tmp')
     # predict_real_time(r'D:\AcouInputDataSet\dataset_single2')

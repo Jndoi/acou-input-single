@@ -34,6 +34,7 @@ class DatasetLoadType(object):
     ALL = "ALL"
     TrainAndTest = "TrainAndTest"
     TrainValidAndTest = "TrainValidAndTest"
+    UniformTrainValidAndTest = "UniformTrainValidAndTest"
 
 
 class DataSourceType(object):

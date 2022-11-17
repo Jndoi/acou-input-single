@@ -7,9 +7,10 @@
 
 """
 import torch
+from sklearn.model_selection import train_test_split
 from torch.utils.data.dataset import Dataset
 from torch.utils.data import DataLoader, random_split
-from constants.constants import DatasetLoadType, DataType, DEFAULT_CONFIG
+from constants.constants import DatasetLoadType, DataType, DEFAULT_CONFIG, LabelVocabulary
 from utils.wav2pickle_utils import load_data_from_pickle, DataItem, DataItemWithPhase
 from utils.plot_utils import show_d_cir, show_signals
 from utils.common_utils import padding_batch_signals
@@ -20,6 +21,28 @@ torch.manual_seed(0)
 TRAIN_RATE = 0.8
 VAL_RATE = 0.1
 TEST_RATE = 0.1
+
+
+def get_data_from_pickles_per_letter(data_path=None, data_type=DEFAULT_CONFIG.get("DataType")):
+    data_d_cir = []
+    data_label = []
+    count = {}
+    for i in range(26):
+        count[i] = 0
+    for data_path_item in data_path:
+        load_data = load_data_from_pickle(data_path_item)
+        for data_item in load_data:
+            data_d_cir.append(data_item.split_abs_d_cir)
+            data_label.append(data_item.label)
+            count[data_item.label] = count[data_item.label] + 1
+    train_x, valid_test_x, train_y, valid_test_y = train_test_split(
+        data_d_cir, data_label, test_size=VAL_RATE+TEST_RATE, random_state=0,
+        stratify=data_label)
+    valid_x, test_x, valid_y, test_y = train_test_split(
+        valid_test_x, valid_test_y, test_size=TEST_RATE/(VAL_RATE+TEST_RATE), random_state=0,
+        stratify=valid_test_y)
+    print(count)
+    return train_x, train_y, valid_x, valid_y, test_x, test_y
 
 
 def get_data_from_pickles(data_path=None, data_type=DEFAULT_CONFIG.get("DataType")):
@@ -72,6 +95,17 @@ class AcouInputDatasetFactory:
             return AcouInputAbsDCirAndRealPhaseDataset(data_type, data_path)
         else:
             raise Exception("Data Type error")
+
+
+class AcouInputUniformDataset(Dataset):
+    def __init__(self, d_cir_data, label):
+        self.d_cir_data, self.label = d_cir_data, label
+
+    def __getitem__(self, index):
+        return self.d_cir_data[index], self.label[index]
+
+    def __len__(self):
+        return len(self.label)  # size of dataset
 
 
 class AcouInputDataset(Dataset):
@@ -159,7 +193,19 @@ def get_data_loader(loader_type=DatasetLoadType.ALL,
         valid_size = int(len(data_set) * VAL_RATE)
         test_size = len(data_set) - train_size - valid_size
         # torch.manual_seed(0) to ensure the split data is same every time
-        train_dataset, valid_dataset, test_dataset = random_split(data_set, [train_size, valid_size, test_size])
+        train_dataset, valid_dataset, test_dataset = random_split(data_set, [train_size, valid_size, test_size], )
+        train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True,
+                                  collate_fn=collate_fn, drop_last=drop_last)
+        valid_loader = DataLoader(valid_dataset, batch_size=batch_size, shuffle=True,
+                                  collate_fn=collate_fn, drop_last=drop_last)
+        test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True,
+                                 collate_fn=collate_fn, drop_last=drop_last)
+        return train_loader, valid_loader, test_loader
+    elif loader_type == DatasetLoadType.UniformTrainValidAndTest:
+        train_x, train_y, valid_x, valid_y, test_x, test_y = get_data_from_pickles_per_letter(data_path)
+        train_dataset = AcouInputUniformDataset(train_x, train_y)
+        valid_dataset = AcouInputUniformDataset(valid_x, valid_y)
+        test_dataset = AcouInputUniformDataset(test_x, test_y)
         train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True,
                                   collate_fn=collate_fn, drop_last=drop_last)
         valid_loader = DataLoader(valid_dataset, batch_size=batch_size, shuffle=True,
