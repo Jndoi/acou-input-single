@@ -130,8 +130,8 @@ def train():
     # ["RES_32", "M", "RES_32",  "M", "RES_64", "M", "RES_128"]
     # 0.838462
     # [16, "M", 32,  "M", 48, "M", 64]
-    args = ["M", 64, "M", 128, "M", 128]
-    net = Net(layers=args, in_channels=32, gru_input_size=128, gru_hidden_size=64, num_classes=26).cuda()
+    args = ["M", 32, "M", 64, "M", 64]
+    net = Net(layers=args, in_channels=32, gru_input_size=64, gru_hidden_size=64, num_classes=26).cuda()
     print_model_parm_nums(net)
     data_path = [
                     r"data/dataset.pkl",
@@ -188,8 +188,8 @@ def train():
 
 
 def predict(base_path, filename):
-    args = ["M", 64, "M", 128, "M", 128]
-    net = Net(layers=args, in_channels=32, gru_input_size=128, gru_hidden_size=64, num_classes=26).cuda()
+    args = ["M", 32, "M", 64, "M", 64]
+    net = Net(layers=args, in_channels=32, gru_input_size=64, gru_hidden_size=64, num_classes=26).cuda()
     # state_dict = torch.load('model/params_15epochs(16).pth')  # 2028 569
     state_dict = torch.load('model/params_10epochs.pth')  # 2028 569
     # state_dict = torch.load('single_net_params.pth')  # 2028 569
@@ -231,10 +231,10 @@ def predict(base_path, filename):
 
 
 def predict_real_time(base_path):
-    args = ["M", 64, "M", 128, "M", 128]
+    args = ["M", 32, "M", 64, "M", 64]
     net = Net(layers=args, in_channels=32, gru_input_size=128, gru_hidden_size=64, num_classes=26).cuda()
     # state_dict = torch.load('model/params_15epochs(16).pth')  # 2028 569
-    state_dict = torch.load('model/params_25epochs.pth')  # 2028 569
+    state_dict = torch.load('model/params_15epochs.pth')  # 2028 569
     net.load_state_dict(state_dict)
     net.eval()  # 禁用 dropout, 避免 BatchNormalization 重新计算均值和方差
     letter_dict = {}
@@ -280,8 +280,8 @@ def predict_real_time(base_path):
 
 
 def get_confusion_matrix():
-    args = ["M", 64, "M", 128, "M", 128]
-    net = Net(layers=args, in_channels=32, gru_input_size=128, gru_hidden_size=64, num_classes=26).cuda()
+    args = ["M", 32, "M", 64, "M", 64]
+    net = Net(layers=args, in_channels=32, gru_input_size=64, gru_hidden_size=64, num_classes=26).cuda()
     state_dict = torch.load('model/params_25epochs.pth')
     net.load_state_dict(state_dict)
     net.eval()
@@ -332,5 +332,5 @@ if __name__ == '__main__':
     # import os
     # files = os.listdir(r"D:\AcouInputDataSet\single_test")
     # predict(r"D:\AcouInputDataSet\single_test", files)
-    # predict_real_time(r'D:\AcouInputDataSet\tmp')
+    # predict_real_time(r'D:\AcouInputDataSet\word')
     # predict_real_time(r'D:\AcouInputDataSet\dataset_single2')
