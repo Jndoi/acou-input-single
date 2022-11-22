@@ -6,15 +6,15 @@
 @Software ：PyCharm
 
 """
-from torch import nn
 import torch
+import datetime
+from torch import nn
 from blocks.se_block import SEBlock
 from blocks.ca_block import CABlock
+from blocks.res_block import ResBasicBlock
+from utils.wav2pickle_utils import DataItem
 from utils.dataset_utils import get_data_loader
 from constants.constants import DatasetLoadType
-from utils.wav2pickle_utils import DataItem
-from blocks.res_block import ResBasicBlock
-import datetime
 
 
 BATCH_SIZE = 16
@@ -46,7 +46,7 @@ class Net(nn.Module):
         self.conv = nn.Sequential(
             nn.Sequential(
                 Conv2dWithBN(1, in_channels, kernel_size=(5, 5), stride=(2, 2), padding=(2, 2)),
-                # nn.Dropout(0.1)
+                nn.Dropout(0.1)
             ),
             self.make_conv_layers(layers),
             nn.AdaptiveAvgPool2d(1),
@@ -103,10 +103,6 @@ def print_model_parm_nums(model):
 
 
 def train():
-    # 0.902564
-    # ["RES_32", "M", "RES_32",  "M", "RES_64", "M", "RES_128"]
-    # 0.838462
-    # [16, "M", 32,  "M", 48, "M", 64]
     args = ["M", 32, "M", 64, "M", 128]
     net = Net(layers=args, in_channels=16, gru_input_size=128, gru_hidden_size=64,
               num_classes=26).cuda()

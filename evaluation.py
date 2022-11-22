@@ -6,17 +6,16 @@
 @Software ：PyCharm
 
 """
-import torch
 import os
+import torch
 import matplotlib.pyplot as plt
-from sklearn.metrics import confusion_matrix
-
-from single_net_new2 import Net, BATCH_SIZE
+from net import Net, BATCH_SIZE
 from transceiver.receiver import Receiver
+from utils.wav2pickle_utils import DataItem
+from sklearn.metrics import confusion_matrix
 from utils.common_utils import cal_cer_total
 from utils.dataset_utils import get_data_loader
 from constants.constants import DatasetLoadType, START_INDEX_SHIFT
-from utils.wav2pickle_utils import DataItem
 
 
 def predict(base_path, filename):
