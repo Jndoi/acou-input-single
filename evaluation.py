@@ -162,5 +162,5 @@ def get_confusion_matrix():
 
 if __name__ == '__main__':
     # pass
-    # predict_real_time(r'D:\AcouInputDataSet\word')
-    predict_real_time(r'D:\AcouInputDataSet\dataset_single2')
+    # predict_real_time(r'D:\AcouInputDataSet\word') # checkpoint 75 8.43%
+    predict_real_time(r'D:\AcouInputDataSet\word')
