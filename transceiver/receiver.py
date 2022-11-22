@@ -367,7 +367,7 @@ class Receiver(object):
         # show_d_cir(data_abs)
         segmentation_index = segmentation(data_abs)
         letter_num = len(segmentation_index)
-        if letter_num != 2:
+        if letter_num != 1:
             return 1
         else:
             return 0
@@ -439,15 +439,15 @@ def gen_cir(base_path, label_arr):
 if __name__ == '__main__':
     letter_dict = {}
     count = 0
-    for root, dirs, files in os.walk(r"D:\AcouInputDataSet\dataset"):
+    for root, dirs, files in os.walk(r"D:\AcouInputDataSet\tmp2"):
         for file in tqdm(files):
             if os.path.splitext(file)[1] == '.wav':
                 label = file.split("_")[0]
                 val = (Receiver.receive(
                     root, file, gen_img=False,
-                    start_index_shift=START_INDEX_SHIFT+28))
+                    start_index_shift=START_INDEX_SHIFT))
                 if val == 1:
-                    # os.remove(os.path.join(r"D:\AcouInputDataSet\dataset", file))
+                    os.remove(os.path.join(r"D:\AcouInputDataSet\tmp2", file))
                     if label not in letter_dict:
                         letter_dict[label] = 0
                     letter_dict[label] = letter_dict[label]+1
