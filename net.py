@@ -52,9 +52,9 @@ class Net(nn.Module):
             nn.AdaptiveAvgPool2d(1),
             nn.Flatten()
         )
-        self.gru = nn.GRU(self.gru_input_size, self.gru_hidden_size, num_layers=2)
+        self.gru = nn.GRU(self.gru_input_size, self.gru_hidden_size, num_layers=1)
         self.cls = nn.Sequential(
-            nn.Linear(self.gru_hidden_size * 2, self.num_classes),
+            nn.Linear(self.gru_hidden_size * 1, self.num_classes),
             nn.LogSoftmax(dim=-1)
         )
 
@@ -104,7 +104,7 @@ def print_model_parm_nums(model):
 
 def train():
     args = ["M", 32, "M", 64, "M", 128]
-    net = Net(layers=args, in_channels=16, gru_input_size=128, gru_hidden_size=64,
+    net = Net(layers=args, in_channels=32, gru_input_size=128, gru_hidden_size=128,
               num_classes=26).cuda()
     print_model_parm_nums(net)
     data_path = [

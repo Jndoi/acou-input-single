@@ -20,7 +20,8 @@ from constants.constants import DatasetLoadType, START_INDEX_SHIFT
 
 def predict(base_path, filename):
     args = ["M", 32, "M", 64, "M", 128]
-    net = Net(layers=args, in_channels=16, gru_input_size=128, gru_hidden_size=64, num_classes=26).cuda()
+    net = Net(layers=args, in_channels=32, gru_input_size=128, gru_hidden_size=128,
+              num_classes=26).cuda()
     # state_dict = torch.load('model/params_15epochs(16).pth')  # 2028 569
     state_dict = torch.load('model/params_10epochs.pth')  # 2028 569
     # state_dict = torch.load('single_net_params.pth')  # 2028 569
@@ -63,7 +64,8 @@ def predict(base_path, filename):
 
 def predict_real_time(base_path):
     args = ["M", 32, "M", 64, "M", 128]
-    net = Net(layers=args, in_channels=16, gru_input_size=128, gru_hidden_size=64, num_classes=26).cuda()
+    net = Net(layers=args, in_channels=32, gru_input_size=128, gru_hidden_size=128,
+              num_classes=26).cuda()
     # state_dict = torch.load('model/params_15epochs(16).pth')  # 2028 569
     state_dict = torch.load('model/params_20epochs.pth')  # 2028 569
     net.load_state_dict(state_dict)
@@ -112,8 +114,9 @@ def predict_real_time(base_path):
 
 def get_confusion_matrix():
     args = ["M", 32, "M", 64, "M", 128]
-    net = Net(layers=args, in_channels=16, gru_input_size=128, gru_hidden_size=64, num_classes=26).cuda()
-    state_dict = torch.load('model/params_25epochs.pth')
+    net = Net(layers=args, in_channels=32, gru_input_size=128, gru_hidden_size=128,
+              num_classes=26).cuda()
+    state_dict = torch.load('model/params_20epochs.pth')
     net.load_state_dict(state_dict)
     net.eval()
     data_path = [
@@ -158,5 +161,6 @@ def get_confusion_matrix():
 
 
 if __name__ == '__main__':
-    pass
+    # pass
     # predict_real_time(r'D:\AcouInputDataSet\word')
+    predict_real_time(r'D:\AcouInputDataSet\dataset_single2')
