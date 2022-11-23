@@ -67,7 +67,7 @@ def predict_real_time(base_path):
     net = Net(layers=args, in_channels=32, gru_input_size=128, gru_hidden_size=128,
               num_classes=26).cuda()
     # state_dict = torch.load('model/params_15epochs(16).pth')  # 2028 569
-    state_dict = torch.load('model/params_20epochs.pth')  # 2028 569
+    state_dict = torch.load('model/params_25epochs.pth')  # 2028 569
     net.load_state_dict(state_dict)
     net.eval()  # 禁用 dropout, 避免 BatchNormalization 重新计算均值和方差
     letter_dict = {}

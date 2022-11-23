@@ -46,11 +46,12 @@ class Net(nn.Module):
         self.conv = nn.Sequential(
             nn.Sequential(
                 Conv2dWithBN(1, in_channels, kernel_size=(5, 5), stride=(2, 2), padding=(2, 2)),
-                nn.Dropout(0.1)
+                # nn.Dropout(0.1)
             ),
             self.make_conv_layers(layers),
             nn.AdaptiveAvgPool2d(1),
-            nn.Flatten()
+            nn.Flatten(),
+            nn.Dropout(0.1)
         )
         self.gru = nn.GRU(self.gru_input_size, self.gru_hidden_size, num_layers=1)
         self.cls = nn.Sequential(
@@ -80,7 +81,7 @@ class Net(nn.Module):
                 layers += [
                             Conv2dWithBN(in_channels=in_channels, out_channels=arg,
                                          kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
-                            nn.Dropout(0.1),
+                            # nn.Dropout(0.1),
                           ]
                 in_channels = arg
             elif arg == "M":
