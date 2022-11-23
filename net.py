@@ -53,9 +53,10 @@ class Net(nn.Module):
             nn.Flatten(),
             nn.Dropout(0.1)
         )
-        self.gru = nn.GRU(self.gru_input_size, self.gru_hidden_size, num_layers=1)
+        self.num_layers = 1
+        self.gru = nn.GRU(self.gru_input_size, self.gru_hidden_size, num_layers=self.num_layers)
         self.cls = nn.Sequential(
-            nn.Linear(self.gru_hidden_size * 1, self.num_classes),
+            nn.Linear(self.gru_hidden_size * self.num_layers, self.num_classes),
             nn.LogSoftmax(dim=-1)
         )
 
