@@ -8,14 +8,16 @@
 """
 import os
 import torch
+import numpy as np
 import matplotlib.pyplot as plt
 from net import Net, BATCH_SIZE
 from transceiver.receiver import Receiver
+from utils.plot_utils import show_confusion_matrix
 from utils.wav2pickle_utils import DataItem
-from sklearn.metrics import confusion_matrix
 from utils.common_utils import cal_cer_total
 from utils.dataset_utils import get_data_loader
-from constants.constants import DatasetLoadType, START_INDEX_SHIFT
+from sklearn.metrics import confusion_matrix, classification_report
+from constants.constants import DatasetLoadType, START_INDEX_SHIFT, LabelVocabulary
 
 
 def predict(base_path, filename):
@@ -112,7 +114,7 @@ def predict_real_time(base_path):
     print(count)
 
 
-def get_confusion_matrix():
+def acoustic_input_evaluation():
     args = ["M", 32, "M", 64, "M", 128]
     net = Net(layers=args, in_channels=32, gru_input_size=128, gru_hidden_size=128,
               num_classes=26).cuda()
@@ -149,18 +151,56 @@ def get_confusion_matrix():
             num += len(pred)
             y_true.extend(y_batch)
             y_pred.extend(pred)
+    # print(classification_report(y_pred, y_true))
     C = confusion_matrix(y_true, y_pred, labels=range(26))
-    plt.matshow(C, cmap=plt.cm.Reds)
-    print(num)
-    for i in range(len(C)):
-        for j in range(len(C)):
-            plt.annotate(C[j, i], xy=(i, j), horizontalalignment='center', verticalalignment='center')
-    plt.ylabel('True label')
-    plt.xlabel('Predicted label')
-    plt.show()
+    C = C.astype('float') / C.sum(axis=1)
+    C = np.around(C, decimals=2)
+    return C
+
+
+def precision(C):
+    # 预测为a中实际为a的比例
+    return recall(C.T)
+
+
+def recall(C):
+    # 实际为a中预测为a的比例
+    arr = []
+    index = 0
+    for predicted_letter_arr in C:
+        arr.append(predicted_letter_arr[index]/np.sum(predicted_letter_arr))
+        index = index + 1
+    return np.array(arr)
+
+
+def f1_score(precision_arr, recall_arr):
+    return 2 * np.multiply(precision_arr, recall_arr) / (precision_arr + recall_arr)
 
 
 if __name__ == '__main__':
     # pass
     # predict_real_time(r'D:\AcouInputDataSet\word') # checkpoint 75 8.43%
-    predict_real_time(r'D:\AcouInputDataSet\word')
+    predict_real_time(r'D:\AcouInputDataSet\tmp2')
+    # show_confusion_matrix(get_confusion_matrix())
+    # C = acoustic_input_evaluation()
+    # precision_arr = precision(C)
+    # recall_arr = recall(C)
+    # f1_score_arr = f1_score(precision_arr, recall_arr)
+    # print(precision_arr)
+    # print(recall_arr)
+    # print(f1_score_arr)
+    # # ref: https://blog.csdn.net/mighty13/article/details/113873617
+    # width = 0.25
+    # plt.figure(figsize=(10, 6))
+    # x = np.arange(len(LabelVocabulary))
+    # # plt.bar(x=x - width, height=precision_arr, width=width, label='1')
+    # # plt.bar(x=x, height=recall_arr, width=width, label='2')
+    # # plt.bar(x=x + width, height=f1_score_arr, width=width, label='3')
+    # plt.bar(x=x, height=precision_arr)
+    # plt.xticks(x, labels=LabelVocabulary)
+    # plt.ylabel('Percentage (%)')
+    # plt.xlabel('Letter Type')
+    # plt.margins(0, 0)
+    # # plt.legend()
+    # # plt.savefig()
+    # plt.show()

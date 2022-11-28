@@ -64,7 +64,7 @@ class Transmitter(object):
         # dump signal
         pickle.dump(up_sample_training_seq, open(os.path.join("../data", signal_type + '_baseband.pkl'), 'wb'))
         pickle.dump(training_seq_fc, open(os.path.join("../data", signal_type+'_passband.pkl'), 'wb'))
-        training_seq_fc = np.tile(training_seq_fc, (1, 1000))  # 10sec
+        training_seq_fc = np.tile(training_seq_fc, (1, 2000))  # 20sec
         empty_seq = np.zeros((1, training_seq_fc.shape[1]))
         # the dim of 0 is top speaker and the dim of 1 is bottom speaker
         audio_signal = np.r_[training_seq_fc, empty_seq].T
@@ -75,7 +75,7 @@ class Transmitter(object):
 
 
 if __name__ == '__main__':
-    pass
-    # Transmitter.gen_sequence(signal_type=SignalType.Barker)
+    # pass
+    Transmitter.gen_sequence(signal_type=SignalType.Barker)
     # Transmitter.get_passband_sequence()
     # Transmitter.get_baseband_sequence()
