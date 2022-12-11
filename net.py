@@ -111,19 +111,18 @@ def train():
     data_path = [
         r"data/dataset.pkl",
         r"data/dataset_10cm.pkl",
-        r"data/dataset_15cm.pkl",
         r"data/dataset_20cm.pkl",
         r"data/dataset_five_fourth.pkl",
         r"data/dataset_four_fifth.pkl",
         r"data/dataset_single.pkl",
         r"data/dataset_10cm_single.pkl",
-        r"data/dataset_15cm_single.pkl",
         r"data/dataset_20cm_single.pkl",
         r"data/dataset_five_fourth_single.pkl",
         r"data/dataset_four_fifth_single.pkl",
     ]
     loss_func = nn.CrossEntropyLoss()
-    optimizer = torch.optim.AdamW(net.parameters(), lr=LR, weight_decay=0.01)
+    optimizer = torch.optim.AdamW(net.parameters(), lr=LR, weight_decay=0.0001)
+    # optimizer = torch.optim.AdamW(net.parameters(), lr=LR, weight_decay=0.01)
     # state_dict = torch.load('single_net_params.pth')  # 2028 569
     # net.load_state_dict(state_dict)
     train_loader, valid_loader, test_loader = get_data_loader(
