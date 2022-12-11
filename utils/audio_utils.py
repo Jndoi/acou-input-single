@@ -15,6 +15,11 @@ from utils.plot_utils import show_signals, show_fft
 
 
 class AudioUtils(object):
+
+    @classmethod
+    def build_cos_or_sin_with_offset(cls, signal_length, sin_or_cos, fc=Fc):
+        pass
+
     @classmethod
     def build_cos_or_sin(cls, signal_length, sin_or_cos, fc=Fc):
         """

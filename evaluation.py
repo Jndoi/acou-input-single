@@ -64,7 +64,7 @@ def predict(base_path, filename):
         print(res)
 
 
-def predict_real_time(base_path):
+def get_net():
     args = ["M", 32, "M", 64, "M", 128]
     net = Net(layers=args, in_channels=32, gru_input_size=128, gru_hidden_size=128,
               num_classes=26).cuda()
@@ -72,41 +72,54 @@ def predict_real_time(base_path):
     state_dict = torch.load('model/params_25epochs.pth')  # 2028 569
     net.load_state_dict(state_dict)
     net.eval()  # 禁用 dropout, 避免 BatchNormalization 重新计算均值和方差
+    return net
+
+
+def predict_real_time_helper(net, base_path, filename, letter_dict, res, words_pre, words_label):
+    output_letter = ""
+    count = 0
+    split_d_cir = Receiver.receive_real_time(base_path, filename,
+                                             start_index_shift=START_INDEX_SHIFT,
+                                             augmentation_radio=None)
+    for d_cir in split_d_cir:
+        d_cir = torch.tensor(d_cir).float() / 255
+        # show_d_cir(d_cir, is_frames=True)
+        d_cir = d_cir.unsqueeze(0)  # add batch_size dim: torch.Size([1, 4, 1, 60, 60])
+        output = net(d_cir.cuda())
+        predicted = torch.argmax(output, 0)
+        output_letter = output_letter + chr(predicted.cpu().numpy() + ord('a'))
+    true_letter = filename.split("_")[0]
+    if true_letter not in letter_dict:
+        letter_dict[true_letter] = 0
+        res[true_letter] = []
+    res[true_letter].append(output_letter)
+    if output_letter == true_letter:
+        count = 1
+        letter_dict[true_letter] = letter_dict[true_letter] + 1
+    elif true_letter == 'quickly':
+        pass
+        # os.remove(os.path.join(base_path, filename))
+    words_pre.append(output_letter)
+    words_label.append(true_letter)
+    print("{}: {}".format(true_letter, output_letter))
+    return count
+
+
+def predict_real_time(base_path):
+    net = get_net()
     letter_dict = {}
     res = {}
     count = 0
     words_pre = []
     words_label = []
     with torch.no_grad():
-        for root, dirs, files in os.walk(base_path):
-            # for filename in tqdm(files):
-            for filename in files:
-                output_letter = ""
-                split_d_cir = Receiver.receive_real_time(base_path, filename,
-                                                         start_index_shift=START_INDEX_SHIFT,
-                                                         augmentation_radio=None)
-                for d_cir in split_d_cir:
-                    d_cir = torch.tensor(d_cir).float() / 255
-                    # show_d_cir(d_cir, is_frames=True)
-                    d_cir = d_cir.unsqueeze(0)  # add batch_size dim: torch.Size([1, 4, 1, 60, 60])
-                    output = net(d_cir.cuda())
-                    predicted = torch.argmax(output, 0)
-                    output_letter = output_letter + chr(predicted.cpu().numpy()+ord('a'))
-                true_letter = filename.split("_")[0]
-                if true_letter not in letter_dict:
-                    letter_dict[true_letter] = 0
-                    res[true_letter] = []
-                res[true_letter].append(output_letter)
-                if output_letter == true_letter:
-                    count = count + 1
-                    letter_dict[true_letter] = letter_dict[true_letter] + 1
-                else:
-                    pass
-                    # print("------", filename)
-                    # os.remove(os.path.join(base_path, filename))
-                words_pre.append(output_letter)
-                words_label.append(true_letter)
-                print("{}: {}".format(true_letter, output_letter))
+        if os.path.isdir(base_path):
+            for root, dirs, files in os.walk(base_path):
+                # for filename in tqdm(files):
+                for filename in files:
+                    predict_real_time_helper(net, base_path, filename, letter_dict, res, words_pre, words_label)
+        else:
+            predict_real_time_helper(net, base_path, '', letter_dict, res, words_pre, words_label)
     # for i in res.items():
     #     print(i)
     print(cal_cer_total(words_pre, words_label))
@@ -180,7 +193,8 @@ def f1_score(precision_arr, recall_arr):
 if __name__ == '__main__':
     # pass
     # predict_real_time(r'D:\AcouInputDataSet\word') # checkpoint 75 8.43%
-    predict_real_time(r'D:\AcouInputDataSet\tmp2')
+    predict_real_time(r'D:\AcouInputDataSet\evaluation\tools\gloves')
+    # predict_real_time(r'./audio')
     # show_confusion_matrix(get_confusion_matrix())
     # C = acoustic_input_evaluation()
     # precision_arr = precision(C)

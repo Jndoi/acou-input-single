@@ -53,7 +53,8 @@ def show_signals(signals, is_frames=False):
     :param signals:
     :return:
     """
-    plt.figure(figsize=(10, 6), dpi=600)
+    # plt.figure(figsize=(10, 6), dpi=600)
+    plt.figure(figsize=(10, 6))
     if is_frames:
         frame = signals[0]
         for index in np.arange(1, signals.shape[0]):

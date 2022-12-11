@@ -242,7 +242,10 @@ class Receiver(object):
         :return: the filtered and aligned signals
         """
         # 1. get data from bottom mic
-        file_path = os.path.join(base_path, filename)
+        if filename is None or len(filename) == 0:
+            file_path = base_path
+        else:
+            file_path = os.path.join(base_path, filename)
         # data[:, 0] received from top mic, data[:, 1] received from bottom mic [phone: HONOR 30 pro]
         data = AudioUtils.read_audio(file_path, device_type)
         # 2. remove the audible noise
@@ -437,33 +440,35 @@ def gen_cir(base_path, label_arr):
 
 
 if __name__ == '__main__':
-    letter_dict = {}
-    count = 0
-    for root, dirs, files in os.walk(r"D:\AcouInputDataSet\tmp2"):
-        for file in tqdm(files):
-            if os.path.splitext(file)[1] == '.wav':
-                label = file.split("_")[0]
-                val = (Receiver.receive(
-                    root, file, gen_img=False,
-                    start_index_shift=START_INDEX_SHIFT))
-                if val == 1:
-                    os.remove(os.path.join(r"D:\AcouInputDataSet\tmp2", file))
-                    if label not in letter_dict:
-                        letter_dict[label] = 0
-                    letter_dict[label] = letter_dict[label]+1
-                    count += val
-    print(count)
-    print(letter_dict)
+    # letter_dict = {}
+    # count = 0
+    # for root, dirs, files in os.walk(r"D:\AcouInputDataSet\tmp2"):
+    #     for file in tqdm(files):
+    #         if os.path.splitext(file)[1] == '.wav':
+    #             label = file.split("_")[0]
+    #             val = (Receiver.receive(
+    #                 root, file, gen_img=False,
+    #                 start_index_shift=START_INDEX_SHIFT))
+    #             if val == 1:
+    #                 os.remove(os.path.join(r"D:\AcouInputDataSet\tmp2", file))
+    #                 if label not in letter_dict:
+    #                     letter_dict[label] = 0
+    #                 letter_dict[label] = letter_dict[label]+1
+    #                 count += val
+    # print(count)
+    # print(letter_dict)
 
-    # segmentation_data = Receiver.receive_real_time(
-    #         # base_path=r'D:\Program\Tencent\QQ-Chat-Record\563496927\FileRecv\MobileFile',
-    #         base_path=r"D:\AcouInputDataSet\tmp",
-    #         # filename='a word_1668253773287.wav',
-    #         # filename='a_1667381131966.wav',
-    #         # filename='c_1668252129068.wav',
-    #         filename='cc_1668270817678.wav',
-    #         # filename='a word_1667371289681.wav',  #
-    #         start_index_shift=START_INDEX_SHIFT,
-    #     )  # (30, 1, 60, 40)
-    # for data in segmentation_data:
-    #     show_d_cir(data, is_frames=True)
+    segmentation_data = Receiver.receive_real_time(
+            # base_path=r'D:\Program\Tencent\QQ-Chat-Record\563496927\FileRecv\MobileFile',
+            # base_path=r"D:\AcouInputDataSet\s",
+            base_path=r'../audio/',
+            # filename='a word_1668253773287.wav',
+            # filename='a_1667381131966.wav',
+            # filename='c_1668252129068.wav',
+            # filename='s_1668233268534.wav',
+            filename='a_1670381082365.wav',
+            # filename='a word_1667371289681.wav',  #
+            start_index_shift=START_INDEX_SHIFT,
+        )  # (30, 1, 60, 40)
+    for data in segmentation_data:
+        show_d_cir(data, is_frames=True)
