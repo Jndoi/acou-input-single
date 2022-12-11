@@ -16,7 +16,6 @@ from utils.wav2pickle_utils import DataItem
 from utils.dataset_utils import get_data_loader
 from constants.constants import DatasetLoadType
 
-
 BATCH_SIZE = 16
 EPOCH = 25
 LR = 1e-3
@@ -60,14 +59,14 @@ class Net(nn.Module):
             nn.LogSoftmax(dim=-1)
         )
 
-    def forward(self, x):   # shape of x: (batch_size, sequence_length, features)
-        x = x.transpose(0, 1)   # (sequence_length, batch_size, 1, H, W)
+    def forward(self, x):  # shape of x: (batch_size, sequence_length, features)
+        x = x.transpose(0, 1)  # (sequence_length, batch_size, 1, H, W)
         conv_items = []
         for x_item in x:
             conv_item = self.conv(x_item).unsqueeze(0)
-            conv_items.append(conv_item)    # shape of conv_item: (1, batch_size, features)
-        x = torch.cat(conv_items, 0)    # shape of x: (sequence_length, batch_size, features)
-        _, h_n = self.gru(x)    # shape of x: (sequence_length, batch_size, gru_hidden_size)
+            conv_items.append(conv_item)  # shape of conv_item: (1, batch_size, features)
+        x = torch.cat(conv_items, 0)  # shape of x: (sequence_length, batch_size, features)
+        _, h_n = self.gru(x)  # shape of x: (sequence_length, batch_size, gru_hidden_size)
         # shape of h_n: (1, batch_size, gru_hidden_size)
         h_n = h_n.transpose(0, 1)
         h_n = h_n.reshape(h_n.shape[0], -1)
@@ -80,10 +79,10 @@ class Net(nn.Module):
         for arg in arch:
             if type(arg) == int:
                 layers += [
-                            Conv2dWithBN(in_channels=in_channels, out_channels=arg,
-                                         kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
-                            # nn.Dropout(0.1),
-                          ]
+                    Conv2dWithBN(in_channels=in_channels, out_channels=arg,
+                                 kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+                    # nn.Dropout(0.1),
+                ]
                 in_channels = arg
             elif arg == "M":
                 layers += [nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2), ceil_mode=True)]
@@ -110,17 +109,19 @@ def train():
               num_classes=26).cuda()
     print_model_parm_nums(net)
     data_path = [
-                    r"data/dataset.pkl",
-                    r"data/dataset_10cm.pkl",
-                    r"data/dataset_20cm.pkl",
-                    r"data/dataset_five_fourth.pkl",
-                    r"data/dataset_four_fifth.pkl",
-                    r"data/dataset_single.pkl",
-                    r"data/dataset_10cm_single.pkl",
-                    r"data/dataset_20cm_single.pkl",
-                    r"data/dataset_five_fourth_single.pkl",
-                    r"data/dataset_four_fifth_single.pkl",
-                ]
+        r"data/dataset.pkl",
+        r"data/dataset_10cm.pkl",
+        r"data/dataset_15cm.pkl",
+        r"data/dataset_20cm.pkl",
+        r"data/dataset_five_fourth.pkl",
+        r"data/dataset_four_fifth.pkl",
+        r"data/dataset_single.pkl",
+        r"data/dataset_10cm_single.pkl",
+        r"data/dataset_15cm_single.pkl",
+        r"data/dataset_20cm_single.pkl",
+        r"data/dataset_five_fourth_single.pkl",
+        r"data/dataset_four_fifth_single.pkl",
+    ]
     loss_func = nn.CrossEntropyLoss()
     optimizer = torch.optim.AdamW(net.parameters(), lr=LR, weight_decay=0.01)
     # state_dict = torch.load('single_net_params.pth')  # 2028 569
@@ -158,13 +159,13 @@ def train():
         end_time = datetime.datetime.now()
         print("[epoch {}] {}s {} acc {} loss {}".format
               (epoch + 1, (end_time - start_time).seconds, correct,
-               round(correct*1.0/train_size, 4), round(epoch_loss, 2)))
+               round(correct * 1.0 / train_size, 4), round(epoch_loss, 2)))
         if (epoch + 1) % 5 == 0:
             print("train loss: {} train acc: {}".format
-                  (round(epoch_loss, 2), round(correct*1.0/train_size, 4)))
+                  (round(epoch_loss, 2), round(correct * 1.0 / train_size, 4)))
             evaluate(valid_loader, net, "valid", valid_size)
             evaluate(test_loader, net, "test", test_size)
-            torch.save(net.state_dict(), 'model/params_{}epochs.pth'.format(epoch+1))
+            torch.save(net.state_dict(), 'model/params_{}epochs.pth'.format(epoch + 1))
 
 
 def evaluate(data_loader, net, type, total):

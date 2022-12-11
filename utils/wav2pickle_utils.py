@@ -134,6 +134,8 @@ if __name__ == '__main__':
     # wav2pickle_new(wav_base_path=r"D:\AcouInputDataSet\dataset",
     #                dump_path=r'../data/dataset_10cm.pkl', start_index_shift=START_INDEX_SHIFT+14)
     # wav2pickle_new(wav_base_path=r"D:\AcouInputDataSet\dataset",
+    #                dump_path=r'../data/dataset_15cm.pkl', start_index_shift=START_INDEX_SHIFT+21)
+    # wav2pickle_new(wav_base_path=r"D:\AcouInputDataSet\dataset",
     #                dump_path=r'../data/dataset_20cm.pkl', start_index_shift=START_INDEX_SHIFT+28)
     # wav2pickle_new(wav_base_path=r"D:\AcouInputDataSet\dataset",
     #                dump_path=r'../data/dataset_four_fifth.pkl', start_index_shift=START_INDEX_SHIFT,
@@ -145,11 +147,13 @@ if __name__ == '__main__':
     #                dump_path=r'../data/dataset_single.pkl', start_index_shift=START_INDEX_SHIFT)
     # wav2pickle_new(wav_base_path=r"D:\AcouInputDataSet\dataset_single",
     #                dump_path=r'../data/dataset_10cm_single.pkl', start_index_shift=START_INDEX_SHIFT+14)
+    wav2pickle_new(wav_base_path=r"D:\AcouInputDataSet\dataset_single",
+                   dump_path=r'../data/dataset_15cm_single.pkl', start_index_shift=START_INDEX_SHIFT+21)
     # wav2pickle_new(wav_base_path=r"D:\AcouInputDataSet\dataset_single",
     #                dump_path=r'../data/dataset_20cm_single.pkl', start_index_shift=START_INDEX_SHIFT+28)
-    wav2pickle_new(wav_base_path=r"D:\AcouInputDataSet\dataset_single",
-                   dump_path=r'../data/dataset_four_fifth_single.pkl', start_index_shift=START_INDEX_SHIFT,
-                   augmentation_radio=0.8)
-    wav2pickle_new(wav_base_path=r"D:\AcouInputDataSet\dataset_single",
-                   dump_path=r'../data/dataset_five_fourth_single.pkl', start_index_shift=START_INDEX_SHIFT,
-                   augmentation_radio=1.25)
+    # wav2pickle_new(wav_base_path=r"D:\AcouInputDataSet\dataset_single",
+    #                dump_path=r'../data/dataset_four_fifth_single.pkl', start_index_shift=START_INDEX_SHIFT,
+    #                augmentation_radio=0.8)
+    # wav2pickle_new(wav_base_path=r"D:\AcouInputDataSet\dataset_single",
+    #                dump_path=r'../data/dataset_five_fourth_single.pkl', start_index_shift=START_INDEX_SHIFT,
+    #                augmentation_radio=1.25)
