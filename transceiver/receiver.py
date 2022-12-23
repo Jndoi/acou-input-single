@@ -10,7 +10,7 @@ from utils.audio_utils import AudioUtils
 from transceiver.transmitter import Transmitter
 from constants.constants import *
 from utils.common_utils import segmentation
-from utils.plot_utils import show_signals, show_d_cir, show_fft, show_phase
+from utils.plot_utils import show_signals, show_d_cir, show_fft, show_phase, save_d_cir
 import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter
 import os
@@ -390,11 +390,10 @@ class Receiver(object):
         data = cls.smooth_data(np.real(data)) + 1j * cls.smooth_data(np.imag(data))
         data = cls.down_sampling(data)
         data_abs = np.abs(data)
-        # show_d_cir(data_abs)
+        # save_d_cir(data_abs)
         # 对信号进行分段[[begin1, end1], [begin2, end2], ..., ]
         segmentation_index = segmentation(data_abs)
         segmentation_data = []
-        # print(segmentation_index)
         for index in segmentation_index:
             curr_data_abs = data_abs[:, index[0]:index[1]]
             if augmentation_radio:
@@ -459,16 +458,17 @@ if __name__ == '__main__':
     # print(letter_dict)
 
     segmentation_data = Receiver.receive_real_time(
-            # base_path=r'D:\Program\Tencent\QQ-Chat-Record\563496927\FileRecv\MobileFile',
+            base_path=r'D:\Program\Tencent\QQ-Chat-Record\563496927\FileRecv\MobileFile',
             # base_path=r"D:\AcouInputDataSet\s",
-            base_path=r'../audio/',
-            # filename='a word_1668253773287.wav',
-            # filename='a_1667381131966.wav',
+            # base_path=r'../audio/',
+            # filename='a test_1671784067670.wav.wav',
+            filename='test_1671784067670.wav',
+            # filename='a_1671537161369.wav',
             # filename='c_1668252129068.wav',
             # filename='s_1668233268534.wav',
-            filename='a_1670381082365.wav',
+            # filename='a_1670381082365.wav',
             # filename='a word_1667371289681.wav',  #
             start_index_shift=START_INDEX_SHIFT,
         )  # (30, 1, 60, 40)
-    for data in segmentation_data:
-        show_d_cir(data, is_frames=True)
+    # for data in segmentation_data:
+    #     save_d_cir(data, is_frames=True)

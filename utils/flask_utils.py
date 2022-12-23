@@ -6,16 +6,18 @@
 @Software ：PyCharm
 
 """
-from flask import Flask, request
+import datetime
+
+from flask import Flask, request, session
 import numpy as np
 import os
 
 from utils.plot_utils import show_signals
-
 UPLOAD_FOLDER = r"../audio"
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-arr = np.array([])
+app.secret_key = 'acoustic_input'
+app.permanent_session_lifetime = datetime.timedelta(seconds=10*60)
 
 
 @app.route('/')
@@ -30,10 +32,29 @@ def recognition_file():
     return "recognition"
 
 
+@app.route('/recognition/start', methods=['GET'])
+def start_session():
+    session['audios'] = np.array([])
+    return 'ok'
+
+
+@app.route('/recognition/stop', methods=['GET'])
+def stop_session():
+    session.clear()
+    return 'ok'
+
+
 @app.route('/recognition/stream', methods=['POST'])
 def recognition_stream():
+    import random
+    session.permanent = True
+    if session.get('data') is None:
+        session['data'] = []
+    else:
+        session['data'].append(1)
     stream_bytes = request.files.get("stream", None).read()
-    audio_bytes = np.reshape(np.frombuffer(stream_bytes, dtype=np.int16), (-1, 2), order='F')[:, 1]
+    # audio_bytes = np.reshape(np.frombuffer(stream_bytes, dtype=np.int16), (-1, 2), order='F')[:, 1]
+    print(session['data'])
     # show_signals(audio_bytes)
     # audio.save(os.path.join(app.config['UPLOAD_FOLDER'], audio.filename))
     return "stream"
