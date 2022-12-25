@@ -85,7 +85,7 @@ def predict_real_time_helper(net, base_path, filename, letter_dict, res, words_p
         d_cir = torch.tensor(d_cir).float() / 255
         # show_d_cir(d_cir, is_frames=True)
         d_cir = d_cir.unsqueeze(0)  # add batch_size dim: torch.Size([1, 4, 1, 60, 60])
-        output = net(d_cir.cuda())
+        output = net(d_cir.cuda(), [d_cir.shape[1]])
         predicted = torch.argmax(output, 0)
         output_letter = output_letter + chr(predicted.cpu().numpy() + ord('a'))
     true_letter = filename.split("_")[0]
@@ -115,23 +115,22 @@ def predict_real_time(base_path):
     with torch.no_grad():
         if os.path.isdir(base_path):
             for root, dirs, files in os.walk(base_path):
-                # for filename in tqdm(files):
                 for filename in files:
                     predict_real_time_helper(net, base_path, filename, letter_dict, res, words_pre, words_label)
         else:
             predict_real_time_helper(net, base_path, '', letter_dict, res, words_pre, words_label)
-    # for i in res.items():
-    #     print(i)
     print(cal_cer_total(words_pre, words_label))
     print(letter_dict)
-    print(count)
+    for v in letter_dict.values():
+        count += v
+    print(count)  # correct word num
 
 
 def acoustic_input_evaluation():
     args = ["M", 32, "M", 64, "M", 128]
     net = Net(layers=args, in_channels=32, gru_input_size=128, gru_hidden_size=128,
               num_classes=26).cuda()
-    state_dict = torch.load('model/params_20epochs.pth')
+    state_dict = torch.load('model/params_25epochs.pth')
     net.load_state_dict(state_dict)
     net.eval()
     data_path = [
@@ -153,11 +152,10 @@ def acoustic_input_evaluation():
     y_true = []
     num = 0
     with torch.no_grad():
-        for step, (d_cir_x_batch, y_batch) in enumerate(test_loader):
-            d_cir_x_batch = d_cir_x_batch.float() / 255
+        for step, (d_cir_x_batch, seq_len, y_batch) in enumerate(test_loader):
             d_cir_x_batch = d_cir_x_batch.cuda()
             y_batch = y_batch.cuda().long()
-            output = net(d_cir_x_batch)
+            output = net(d_cir_x_batch, seq_len)
             pred = torch.argmax(output, 1)
             y_batch = y_batch.cpu().numpy().tolist()
             pred = pred.cpu().numpy().tolist()
@@ -192,10 +190,10 @@ def f1_score(precision_arr, recall_arr):
 
 if __name__ == '__main__':
     # pass
-    # predict_real_time(r'D:\AcouInputDataSet\word') # checkpoint 75 8.43%
-    predict_real_time(r'D:\AcouInputDataSet\evaluation\tools\gloves')
+    predict_real_time(r'D:\AcouInputDataSet\word')  # checkpoint 75 8.43%
+    # predict_real_time(r'D:\AcouInputDataSet\evaluation\tools\gloves')
     # predict_real_time(r'./audio')
-    # show_confusion_matrix(get_confusion_matrix())
+    # show_confusion_matrix(acoustic_input_evaluation())
     # C = acoustic_input_evaluation()
     # precision_arr = precision(C)
     # recall_arr = recall(C)

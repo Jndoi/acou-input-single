@@ -7,6 +7,7 @@
 
 """
 import torch
+import numpy as np
 from sklearn.model_selection import train_test_split
 from torch.utils.data.dataset import Dataset
 from torch.utils.data import DataLoader, random_split
@@ -137,6 +138,19 @@ class AcouInputAbsDCirDataset(AcouInputDataset):
         return d_cir_item, item_label
 
 
+def pack_padded_sequence_collate_fn_abs_d_cir(data):
+    # Packs a Tensor containing padded sequences of variable length.
+    from torch.nn.utils.rnn import pad_sequence, pack_padded_sequence
+    data.sort(key=lambda x: len(x[0]), reverse=True)
+    abs_d_cir = [torch.tensor(s[0]).float() / 255 for s in data]
+    seq_len = [len(s) for s in abs_d_cir]
+    y = [s[1] for s in data]
+    abs_d_cir = pad_sequence(abs_d_cir, batch_first=True)
+    # abs_d_cir = pack_padded_sequence(abs_d_cir, seq_len, batch_first=True)
+    # 填充并打包
+    return abs_d_cir, seq_len, torch.tensor(np.array(y))
+
+
 def data_frames_collate_fn_abs_d_cir(data):
     # data is a list, and each item in data is a tuple (d_cir_x, y)
     # x stands for the features, and y stands for the labels
@@ -157,7 +171,8 @@ def get_data_loader(loader_type=DatasetLoadType.ALL,
                     drop_last=True,
                     data_type=DEFAULT_CONFIG.get("DataType")):
     if data_type == DataType.AbsDCir:
-        collate_fn = data_frames_collate_fn_abs_d_cir
+        collate_fn = pack_padded_sequence_collate_fn_abs_d_cir
+        # collate_fn = data_frames_collate_fn_abs_d_cir
     elif data_type == DataType.AbsDCirAndRealPhase:
         collate_fn = data_frames_collate_fn_abs_d_cir_real_phase
     else:
@@ -215,14 +230,12 @@ def get_data_loader(loader_type=DatasetLoadType.ALL,
 
 if __name__ == '__main__':
     train_data_loader, test_data_loader = \
-        get_data_loader(data_path=r"../data/dataset_single_smooth_20_40_.pkl",
+        get_data_loader(data_path=r"../data/dataset.pkl",
                         loader_type=DatasetLoadType.TrainAndTest,
-                        batch_size=8)
-    for index, (train_d_cir_x, train_y) in enumerate(train_data_loader):
-        print(train_d_cir_x.shape)
+                        batch_size=3)
+    for index, (train_d_cir_x, seq_len, train_y) in enumerate(train_data_loader):
         item = train_d_cir_x[0]  # 120, 40
-        print(item.shape)
-        item = item.reshape(7, 1, 3, 40, 40)[:,:,0, :,:].squeeze(2)  #
-        show_d_cir(item[0], is_frames=True)
+        # item = item.reshape(7, 1, 3, 40, 40)[:,:,0, :,:].squeeze(2)  #
+        show_d_cir(item.numpy(), is_frames=True)
         # train_x = train_x.reshape(5, -1, 61, 40)
         break

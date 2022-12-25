@@ -459,15 +459,9 @@ if __name__ == '__main__':
 
     segmentation_data = Receiver.receive_real_time(
             base_path=r'D:\Program\Tencent\QQ-Chat-Record\563496927\FileRecv\MobileFile',
-            # base_path=r"D:\AcouInputDataSet\s",
-            # base_path=r'../audio/',
-            # filename='a test_1671784067670.wav.wav',
-            filename='test_1671784067670.wav',
-            # filename='a_1671537161369.wav',
-            # filename='c_1668252129068.wav',
-            # filename='s_1668233268534.wav',
-            # filename='a_1670381082365.wav',
-            # filename='a word_1667371289681.wav',  #
+            filename='test_1671784067670.wav',  # away from and close to 10cm
+            # filename='a_1671537161369.wav',  # check the data augmentation
+            # filename='a word_1667371289681.wav',  # test the segmentation
             start_index_shift=START_INDEX_SHIFT,
         )  # (30, 1, 60, 40)
     # for data in segmentation_data:

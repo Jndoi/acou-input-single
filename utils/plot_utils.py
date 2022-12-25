@@ -32,7 +32,7 @@ def show_confusion_matrix(C):
     plt.ylabel('True Label')
     plt.xlabel('Predicted Label')
     plt.tick_params(bottom=False, top=False, left=False, right=False)  # remove tick marks
-    plt.savefig(r"C:\Users\zengq\Desktop\confusion_matrix.pdf", dpi=600)
+    plt.savefig(r"C:\Users\zengq\Desktop\confusion_matrix_old.pdf", dpi=600)
     plt.show()
 
 
@@ -158,7 +158,7 @@ def save_d_cir(d_cir, is_frames=False):
     # plt.gca().yaxis.set_major_locator(plt.NullLocator())
     # plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
     # plt.margins(0, 0)
-    plt.savefig(r"C:\Users\zengq\Desktop\test.pdf", dpi=600)
+    plt.savefig(r"C:\Users\zengq\Desktop\test.pdf", dpi=600, bbox_inches='tight', pad_inches=0.0)
     plt.show()
 
 

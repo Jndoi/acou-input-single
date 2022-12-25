@@ -9,6 +9,8 @@
 import torch
 import datetime
 from torch import nn
+from torch.nn.utils.rnn import pack_padded_sequence
+
 from blocks.se_block import SEBlock
 from blocks.ca_block import CABlock
 from blocks.res_block import ResBasicBlock
@@ -50,7 +52,7 @@ class Net(nn.Module):
             self.make_conv_layers(layers),
             nn.AdaptiveAvgPool2d(1),
             nn.Flatten(),
-            nn.Dropout(0.1)
+            nn.Dropout(0.2)
         )
         self.num_layers = 1
         self.gru = nn.GRU(self.gru_input_size, self.gru_hidden_size, num_layers=self.num_layers)
@@ -59,13 +61,14 @@ class Net(nn.Module):
             nn.LogSoftmax(dim=-1)
         )
 
-    def forward(self, x):  # shape of x: (batch_size, sequence_length, features)
+    def forward(self, x, seq_len):  # shape of x: (batch_size, sequence_length, features)
         x = x.transpose(0, 1)  # (sequence_length, batch_size, 1, H, W)
         conv_items = []
         for x_item in x:
             conv_item = self.conv(x_item).unsqueeze(0)
             conv_items.append(conv_item)  # shape of conv_item: (1, batch_size, features)
         x = torch.cat(conv_items, 0)  # shape of x: (sequence_length, batch_size, features)
+        x = pack_padded_sequence(x, seq_len)
         _, h_n = self.gru(x)  # shape of x: (sequence_length, batch_size, gru_hidden_size)
         # shape of h_n: (1, batch_size, gru_hidden_size)
         h_n = h_n.transpose(0, 1)
@@ -104,6 +107,7 @@ def print_model_parm_nums(model):
 
 
 def train():
+    import numpy as np
     args = ["M", 32, "M", 64, "M", 128]
     net = Net(layers=args, in_channels=32, gru_input_size=128, gru_hidden_size=128,
               num_classes=26).cuda()
@@ -121,8 +125,7 @@ def train():
         r"data/dataset_four_fifth_single.pkl",
     ]
     loss_func = nn.CrossEntropyLoss()
-    optimizer = torch.optim.AdamW(net.parameters(), lr=LR, weight_decay=0.0001)
-    # optimizer = torch.optim.AdamW(net.parameters(), lr=LR, weight_decay=0.01)
+    optimizer = torch.optim.AdamW(net.parameters(), lr=LR, weight_decay=0.01)
     # state_dict = torch.load('single_net_params.pth')  # 2028 569
     # net.load_state_dict(state_dict)
     train_loader, valid_loader, test_loader = get_data_loader(
@@ -142,12 +145,12 @@ def train():
         correct = 0
         epoch_loss = 0
         start_time = datetime.datetime.now()
-        for step, (d_cir_x_batch, y_batch) in enumerate(train_loader):
-            d_cir_x_batch = d_cir_x_batch.float() / 255
+        for step, (d_cir_x_batch, seq_len, y_batch) in enumerate(train_loader):
+            # d_cir_x_batch = d_cir_x_batch.float() / 255
             d_cir_x_batch = d_cir_x_batch.cuda()
             y_batch = y_batch.cuda().long()
-            output = net(d_cir_x_batch)
-            loss = loss_func(output, y_batch)  # (N,)
+            output = net(d_cir_x_batch, seq_len)
+            loss = loss_func(output, y_batch)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -171,11 +174,11 @@ def evaluate(data_loader, net, type, total):
     correct = 0
     net.eval()
     with torch.no_grad():
-        for step, (d_cir_x_batch, y_batch) in enumerate(data_loader):
+        for step, (d_cir_x_batch, seq_len, y_batch) in enumerate(data_loader):
             d_cir_x_batch = d_cir_x_batch.cuda()
             y_batch = y_batch.cuda()
-            d_cir_x_batch = d_cir_x_batch.float() / 255
-            output = net(d_cir_x_batch)
+            # d_cir_x_batch = d_cir_x_batch.float() / 255
+            output = net(d_cir_x_batch, seq_len)
             predicted = torch.argmax(output, 1)
             correct += sum(y_batch == predicted).item()
         print("{}: {}/{}, acc {}".format(type, correct, total, round(correct * 1.0 / total, 6)))
